@@ -1412,80 +1412,10 @@ Enhancements in 1.1.0:
     <button id="restart-btn" class="restart-btn">Start New Session</button>
 </div>
 
+<script src="./data/verbs.js"></script>
 <script>
-    // Our verb database
-    const verbs = [
-        {
-            id: 1,
-            greek: "μένω",
-            english: "to stay/live",
-            hint: "Starts with 'μ' and ends with 'ω'",
-            group: "First conjugation, A group"
-        },
-        {
-            id: 2,
-            greek: "είμαι",
-            english: "to be",
-            hint: "An irregular verb",
-            group: "Irregular verb"
-        },
-        {
-            id: 3,
-            greek: "έχω",
-            english: "to have",
-            hint: "Starts with 'έ' and has a 'χ' in it",
-            group: "First conjugation, A group - irregular"
-        },
-        {
-            id: 4,
-            greek: "κάνω",
-            english: "to do/make",
-            hint: "Starts with 'κ' and has an accent on the first syllable",
-            group: "First conjugation, B group"
-        },
-        {
-            id: 5,
-            greek: "θέλω",
-            english: "to want",
-            hint: "Starts with 'θ' and has an accent on the first syllable",
-            group: "First conjugation, A group"
-        },
-        {
-            id: 6,
-            greek: "ακούω",
-            english: "to listen/hear",
-            hint: "Starts with 'α' and has 'κ' in it",
-            group: "First conjugation, A group"
-        },
-        {
-            id: 7,
-            greek: "βλέπω",
-            english: "to see/watch",
-            hint: "Has 'β' at the beginning",
-            group: "First conjugation, A group"
-        },
-        {
-            id: 8,
-            greek: "μιλάω",
-            english: "to speak/talk",
-            hint: "Contracted verb ending in -άω",
-            group: "First conjugation, contracted"
-        },
-        {
-            id: 9,
-            greek: "τρώω",
-            english: "to eat",
-            hint: "Starts with 'τρ'",
-            group: "First conjugation, irregular"
-        },
-        {
-            id: 10,
-            greek: "πίνω",
-            english: "to drink",
-            hint: "Starts with 'π' and ends with 'νω'",
-            group: "First conjugation, A group"
-        }
-    ];
+    window.selectedVerbs = verbs.map(verb => verb.id); // Default to all verbs selected
+    let verbProgress = [];
 
     // Basic tab functionality
     function showSection(sectionId) {
@@ -1565,7 +1495,7 @@ Enhancements in 1.1.0:
     let sessionStartTime = null;
     let currentVerbId = null;
     let selectedVerbs = verbs.map(verb => verb.id);
-    let verbProgress = [];
+    window.verbProgress = [];
     let intervalSettings = {
         hard: 10,
         medium: 60,
@@ -1632,43 +1562,7 @@ Enhancements in 1.1.0:
     }
 
     // Initialize progress data
-    function initializeProgressData() {
-        // Create initial progress data for each verb
-        verbProgress = verbs.map(verb => {
-            // Generate random mastery level for demonstration
-            const randomMastery = Math.floor(Math.random() * 100);
 
-            // Determine status based on mastery level
-            let status;
-            if (randomMastery < 30) {
-                status = 'hard';
-            } else if (randomMastery < 60) {
-                status = 'medium';
-            } else if (randomMastery < 80) {
-                status = 'easy';
-            } else {
-                status = 'learned';
-            }
-
-            // Calculate next review date based on status
-            const nextReview = calculateNextReview(status);
-
-            return {
-                verbId: verb.id,
-                correctCount: Math.floor(Math.random() * 10),
-                incorrectCount: Math.floor(Math.random() * 5),
-                lastAttempted: new Date(Date.now() - Math.random() * 86400000).toISOString(),
-                masteryLevel: randomMastery,
-                status: status,
-                nextReview: nextReview
-            };
-        });
-
-        updateDueCounts();
-        populateStatusView();
-    }
-
-    // Load settings from form elements
     function loadSettingsFromForm() {
         // Convert form values to minutes for internal storage
         const convertToMinutes = (value, unit) => {
