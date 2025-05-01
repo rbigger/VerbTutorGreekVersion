@@ -1,8 +1,8 @@
-
-
-export function initializeProgressData() {
+// js/models/InitializeProgressData.js
+// Make the function globally available
+window.initializeProgressData = function() {
     // Create initial progress data for each verb
-    verbProgress = verbs.map(verb => {
+    return verbs.map(verb => {
         // Generate random mastery level for demonstration
         const randomMastery = Math.floor(Math.random() * 100);
 
@@ -31,7 +31,4 @@ export function initializeProgressData() {
             nextReview: nextReview
         };
     });
-
-    updateDueCounts();
-    populateStatusView();
-}
+};
