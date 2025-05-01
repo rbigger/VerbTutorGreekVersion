@@ -1,0 +1,3653 @@
+<!DOCTYPE html>
+<!--
+Greek Verb Quiz with Adaptive Spaced Repetition
+Version: 1.1.0
+Original Version: 1.0.0 - Initial implementation with basic spaced repetition system
+Enhancements in 1.1.0:
+- Improved UI for verb selection with collapsible/expandable verb groups
+- Added support for scaling to 500+ verbs with more efficient display
+- Each conjugation group now initially shows one line of verbs with a More/Less toggle
+- Maintains clean UI while making all verbs accessible when needed
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Greek Verb Quiz with Adaptive Spaced Repetition</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f8fa;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .quiz-container, .progress-container, .selection-container, .settings-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        .control-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+        }
+        .score {
+            font-weight: bold;
+            font-size: 18px;
+            color: #2c3e50;
+        }
+        .progress {
+            color: #7f8c8d;
+        }
+        .question-container {
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+        .question-text {
+            font-size: 18px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .question-details {
+            color: #7f8c8d;
+            font-style: italic;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        .answer-container {
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+        input[type="text"]:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .feedback {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            display: none;
+        }
+        .correct {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .incorrect {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .hint {
+            color: #6c757d;
+            font-style: italic;
+            margin-top: 10px;
+            display: none;
+        }
+        .next-btn {
+            display: none;
+            background-color: #28a745;
+        }
+        .next-btn:hover {
+            background-color: #218838;
+        }
+        .hint-btn {
+            background-color: #6c757d;
+            margin-right: 10px;
+        }
+        .hint-btn:hover {
+            background-color: #5a6268;
+        }
+        .buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+        .verb-group {
+            display: inline-block;
+            background-color: #e9ecef;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 13px;
+            margin-right: 5px;
+            color: #495057;
+        }
+        .results-container {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background-color: #e8f4f8;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .results-header {
+            font-size: 24px;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .results-score {
+            font-size: 48px;
+            color: #3498db;
+            margin-bottom: 20px;
+        }
+        .restart-btn {
+            background-color: #3498db;
+            margin-top: 20px;
+        }
+        .session-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #6c757d;
+        }
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .progress-header h2 {
+            margin: 0;
+            color: #2c3e50;
+        }
+        .progress-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .progress-table th, .progress-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e1e1e1;
+        }
+        .progress-table th {
+            background-color: #f8f9fa;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+        .progress-table tr:hover {
+            background-color: #f5f8fa;
+        }
+        .mastery-bar {
+            height: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+            width: 100%;
+        }
+        .mastery-level {
+            height: 100%;
+            border-radius: 5px;
+        }
+        .mastery-low {
+            background-color: #dc3545;
+            width: 33%;
+        }
+        .mastery-medium {
+            background-color: #ffc107;
+            width: 66%;
+        }
+        .mastery-high {
+            background-color: #28a745;
+            width: 100%;
+        }
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab-button {
+            background-color: #f8f9fa;
+            color: #495057;
+            border: 1px solid #ddd;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: bold;
+        }
+        .tab-button:first-child {
+            border-radius: 4px 0 0 4px;
+        }
+        .tab-button:last-child {
+            border-radius: 0 4px 4px 0;
+        }
+        .tab-button.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        .progress-summary {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .summary-label {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .summary-value {
+            color: #3498db;
+            font-weight: bold;
+        }
+        .chart-container {
+            height: 200px;
+            margin-bottom: 20px;
+            position: relative;
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #e0e0e0;
+        }
+        .chart-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #777;
+            font-style: italic;
+        }
+        .bar-container {
+            display: flex;
+            align-items: flex-end;
+            height: 180px;
+            padding-top: 20px;
+        }
+        .bar-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0 5px;
+        }
+        .bar {
+            width: 30px;
+            background-color: #3498db;
+            border-radius: 3px 3px 0 0;
+            margin-bottom: 5px;
+        }
+        .bar-label {
+            text-align: center;
+            font-size: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 60px;
+        }
+        .selection-header {
+            margin-bottom: 20px;
+        }
+        .selection-header h2 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .selection-header p {
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+        .selection-view-buttons {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .selection-view-button {
+            background-color: #f8f9fa;
+            color: #495057;
+            border: 1px solid #ddd;
+            padding: 8px 15px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 14px;
+        }
+        .selection-view-button:first-child {
+            border-radius: 4px 0 0 4px;
+        }
+        .selection-view-button:last-child {
+            border-radius: 0 4px 4px 0;
+        }
+        .selection-view-button.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        .selection-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .selection-groups {
+            margin-bottom: 20px;
+        }
+        .selection-group {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+        /* NEW: Styling for group header with More/Less button */
+        .selection-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .selection-group-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 0;
+        }
+        .toggle-button {
+            background-color: #e9ecef;
+            color: #495057;
+            border: 1px solid #ced4da;
+            padding: 3px 8px;
+            font-size: 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .toggle-button:hover {
+            background-color: #dee2e6;
+        }
+        /* NEW: Styling for verb container with controlled height */
+        .verb-checkbox-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+            max-height: 52px; /* Height for one row, adjusted based on your verb item height */
+            overflow-y: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .verb-checkbox-container.expanded {
+            max-height: 210px; /* Height for 4 rows (original + 3 more) */
+            overflow-y: auto;
+        }
+        .verb-checkbox {
+            display: flex;
+            align-items: center;
+        }
+        .verb-checkbox input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        .verb-checkbox label {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+        .verb-meaning {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-left: 22px;
+        }
+        .verb-meaning-inline {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-left: 5px;
+        }
+        .search-box {
+            margin-bottom: 15px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .search-input:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+        .no-results {
+            color: #7f8c8d;
+            font-style: italic;
+            padding: 10px;
+            text-align: center;
+        }
+        .selection-summary {
+            margin-top: 15px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .storage-note {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            border-radius: 4px;
+            color: #856404;
+        }
+        .difficulty-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 15px;
+            display: none;
+        }
+        .difficulty-prompt {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+        .difficulty-options {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        .difficulty-btn {
+            padding: 8px 15px;
+            font-weight: bold;
+            font-size: 14px;
+            border-radius: 20px;
+            flex: 1;
+            max-width: 120px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .hard-btn {
+            background-color: #dc3545;
+        }
+        .medium-btn {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        .easy-btn {
+            background-color: #28a745;
+        }
+        .learned-btn {
+            background-color: #17a2b8;
+        }
+        .next-review {
+            font-size: 12px;
+            margin-top: 5px;
+            color: rgba(255,255,255,0.9);
+        }
+        .medium-btn .next-review {
+            color: rgba(0,0,0,0.7);
+        }
+        .settings-section {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+        }
+        .settings-title {
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .settings-group {
+            background-color: white;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #e9ecef;
+        }
+        .settings-group-title {
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        .settings-form {
+            display: grid;
+            gap: 15px;
+        }
+        .settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .settings-label {
+            font-weight: bold;
+            color: #495057;
+        }
+        .settings-controls {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .settings-input {
+            width: 60px;
+            padding: 5px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .settings-select {
+            padding: 5px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+        .settings-help {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 2px;
+        }
+        .due-verbs-panel {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #e8f4f8;
+            border-radius: 5px;
+            border: 1px solid #bee5eb;
+        }
+        .due-verbs-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .due-verbs-counts {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .due-count {
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .due-hard {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .due-medium {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .due-easy {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .due-learned {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        .verb-queue {
+            padding: 10px;
+            background-color: white;
+            border-radius: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+            border: 1px solid #dee2e6;
+        }
+        .queue-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #f2f2f2;
+        }
+        .queue-item:last-child {
+            border-bottom: none;
+        }
+        .queue-verb {
+            font-weight: bold;
+        }
+        .queue-due {
+            color: #6c757d;
+            font-size: 12px;
+        }
+        .review-history {
+            margin-top: 20px;
+        }
+        .review-history-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+        .history-time {
+            color: #6c757d;
+            font-size: 12px;
+        }
+        .history-result {
+            font-weight: bold;
+        }
+        .history-result.correct {
+            color: #28a745;
+        }
+        .history-result.incorrect {
+            color: #dc3545;
+        }
+        .session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .session-title {
+            font-size: 20px;
+            color: #2c3e50;
+            margin: 0;
+        }
+        .hidden {
+            display: none;
+        }
+        .tutorial-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .tutorial-box {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .tutorial-title {
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .tutorial-step {
+            margin-bottom: 20px;
+        }
+        .tutorial-step-title {
+            font-weight: bold;
+            color: #3498db;
+            margin-bottom: 5px;
+        }
+        .tutorial-img {
+            width: 100%;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+        }
+        .tutorial-actions {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .understand-btn {
+            background-color: #28a745;
+            padding: 10px 30px;
+        }
+    </style>
+</head>
+<body>
+<h1>Greek Verb Quiz with Adaptive Spaced Repetition</h1>
+
+<div class="storage-note">
+    <strong>Note:</strong> This is a prototype. Your progress will be lost when you close or refresh the page.
+    In a full implementation, your learning progress would be saved across sessions.
+</div>
+
+<div class="tutorial-overlay" id="tutorial-overlay">
+    <div class="tutorial-box">
+        <h2 class="tutorial-title">How Adaptive Spaced Repetition Works</h2>
+
+        <div class="tutorial-step">
+            <div class="tutorial-step-title">1. Learn with feedback-driven intervals</div>
+            <p>After answering each question, you'll rate how well you knew the answer using four difficulty levels:</p>
+            <ul>
+                <li><strong style="color: #dc3545;">Hard</strong> - You struggled with this verb (review again in 10 minutes)</li>
+                <li><strong style="color: #ffc107;">Medium</strong> - You knew it but had to think (review again in 1 hour)</li>
+                <li><strong style="color: #28a745;">Easy</strong> - You knew it quickly (review again in 1 day)</li>
+                <li><strong style="color: #17a2b8;">Learned</strong> - You've mastered it (review again in 5 days)</li>
+            </ul>
+        </div>
+
+        <div class="tutorial-step">
+            <div class="tutorial-step-title">2. Customize your learning pace</div>
+            <p>You can adjust the intervals for each difficulty level in the Settings tab to match your learning style.</p>
+        </div>
+
+        <div class="tutorial-step">
+            <div class="tutorial-step-title">3. Focus on what needs practice</div>
+            <p>The system prioritizes verbs that are due for review, with harder items appearing more frequently.</p>
+        </div>
+
+        <div class="tutorial-step">
+            <div class="tutorial-step-title">Why this works</div>
+            <p>Research shows that successful retrieval strengthens memory, and the optimal time to review is just before you would naturally forget. This system helps you practice at the right intervals for maximum retention.</p>
+        </div>
+
+        <div class="tutorial-actions">
+            <button class="understand-btn" id="understand-btn">Got it!</button>
+        </div>
+    </div>
+</div>
+
+<div class="tab-buttons">
+    <button id="quiz-tab" class="tab-button">Quiz</button>
+    <button id="selection-tab" class="tab-button active">Select Verbs</button>
+    <button id="settings-tab" class="tab-button">Settings</button>
+    <button id="progress-tab" class="tab-button">Progress</button>
+</div>
+
+<!-- SETTINGS SCREEN -->
+<div id="settings-section" class="settings-container" style="display:none;">
+    <div class="session-header">
+        <h2 class="session-title">Learning Settings</h2>
+    </div>
+
+    <div class="settings-section">
+        <h3 class="settings-title">Spaced Repetition Intervals</h3>
+        <p>Customize how frequently you'll review verbs based on your rating of difficulty.</p>
+
+        <div class="settings-grid">
+            <div class="settings-group">
+                <div class="settings-group-title">Difficulty Ratings</div>
+                <div class="settings-form">
+                    <div class="settings-row">
+                        <div class="settings-label">Hard</div>
+                        <div class="settings-controls">
+                            <input type="number" id="hard-interval" class="settings-input" value="10" min="1">
+                            <select id="hard-unit" class="settings-select">
+                                <option value="minutes">minutes</option>
+                                <option value="hours">hours</option>
+                                <option value="days">days</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="settings-help">For verbs you struggle with and need to review very soon</div>
+
+                    <div class="settings-row">
+                        <div class="settings-label">Medium</div>
+                        <div class="settings-controls">
+                            <input type="number" id="medium-interval" class="settings-input" value="1" min="1">
+                            <select id="medium-unit" class="settings-select">
+                                <option value="minutes">minutes</option>
+                                <option value="hours" selected>hours</option>
+                                <option value="days">days</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="settings-help">For verbs you know but need to reinforce</div>
+
+                    <div class="settings-row">
+                        <div class="settings-label">Easy</div>
+                        <div class="settings-controls">
+                            <input type="number" id="easy-interval" class="settings-input" value="1" min="1">
+                            <select id="easy-unit" class="settings-select">
+                                <option value="minutes">minutes</option>
+                                <option value="hours">hours</option>
+                                <option value="days" selected>days</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="settings-help">For verbs you know well</div>
+
+                    <div class="settings-row">
+                        <div class="settings-label">Learned</div>
+                        <div class="settings-controls">
+                            <input type="number" id="learned-interval" class="settings-input" value="5" min="1">
+                            <select id="learned-unit" class="settings-select">
+                                <option value="minutes">minutes</option>
+                                <option value="hours">hours</option>
+                                <option value="days" selected>days</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="settings-help">For verbs you've mastered</div>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <div class="settings-group-title">Quiz Options</div>
+                <div class="settings-form">
+                    <div class="settings-row">
+                        <div class="settings-label">Quiz Mode</div>
+                        <div class="settings-controls">
+                            <select id="quiz-mode" class="settings-select" style="width: 150px;">
+                                <option value="due">Due Verbs First</option>
+                                <option value="random">Random Order</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="settings-help">"Due Verbs First" prioritizes verbs that need review</div>
+
+                    <div class="settings-row">
+                        <div class="settings-label">Session Size</div>
+                        <div class="settings-controls">
+                            <input type="number" id="session-size" class="settings-input" value="10" min="1" style="width: 80px;">
+                            <span>verbs</span>
+                        </div>
+                    </div>
+                    <div class="settings-help">Maximum number of verbs per practice session</div>
+
+                    <div class="settings-row">
+                        <div class="settings-label">First Letter Case</div>
+                        <div class="settings-controls">
+                            <select id="case-sensitivity" class="settings-select" style="width: 150px;">
+                                <option value="insensitive">Ignore capitalization</option>
+                                <option value="sensitive">Case sensitive</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="settings-help">Whether first letter capitalization matters</div>
+                </div>
+            </div>
+        </div>
+
+        <button id="save-settings-btn" style="margin-top: 20px;">Save Settings</button>
+    </div>
+</div>
+
+<!-- VERB SELECTION SCREEN -->
+<div id="selection-section" class="selection-container">
+    <div class="session-header">
+        <h2 class="session-title">Select Verbs to Practice</h2>
+    </div>
+
+    <div class="due-verbs-panel">
+        <div class="due-verbs-title">Verbs Due for Review</div>
+        <div class="due-verbs-counts">
+            <div>
+                <span class="due-count due-hard" id="due-hard-count">2</span> Hard
+                <span class="due-count due-medium" id="due-medium-count">3</span> Medium
+                <span class="due-count due-easy" id="due-easy-count">4</span> Easy
+                <span class="due-count due-learned" id="due-learned-count">1</span> Learned
+            </div>
+            <button id="select-due-btn">Select All Due Verbs</button>
+        </div>
+
+        <div class="verb-queue">
+            <div class="queue-item">
+                <span class="queue-verb">είμαι <small>(to be)</small></span>
+                <span class="queue-due due-hard">Due now (Hard)</span>
+            </div>
+            <div class="queue-item">
+                <span class="queue-verb">κάνω <small>(to do/make)</small></span>
+                <span class="queue-due due-hard">Due now (Hard)</span>
+            </div>
+            <div class="queue-item">
+                <span class="queue-verb">έχω <small>(to have)</small></span>
+                <span class="queue-due due-medium">Due in 30 minutes (Medium)</span>
+            </div>
+            <div class="queue-item">
+                <span class="queue-verb">μένω <small>(to stay/live)</small></span>
+                <span class="queue-due due-medium">Due in 45 minutes (Medium)</span>
+            </div>
+            <div class="queue-item">
+                <span class="queue-verb">θέλω <small>(to want)</small></span>
+                <span class="queue-due due-medium">Due in 1 hour (Medium)</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="selection-view-buttons">
+        <button id="view-by-group" class="selection-view-button active">By Conjugation Group</button>
+        <button id="view-alphabetical" class="selection-view-button">Alphabetical</button>
+        <button id="view-by-status" class="selection-view-button">By Difficulty</button>
+    </div>
+
+    <div class="search-box">
+        <input type="text" id="search-input" class="search-input" placeholder="Search for verbs...">
+    </div>
+
+    <!-- View by conjugation group - UPDATED with collapsible sections -->
+    <div id="group-view" class="selection-groups">
+        <!-- Group: First conjugation, A group -->
+        <div class="selection-group">
+            <div class="selection-group-header">
+                <div class="selection-group-title">First conjugation, A group</div>
+                <button class="toggle-button" data-target="first-conj-a">More</button>
+            </div>
+            <div class="verb-checkbox-container" id="first-conj-a">
+                <div class="verb-checkbox">
+                    <input type="checkbox" id="verb-1" checked>
+                    <label for="verb-1">μένω</label>
+                    <div class="verb-meaning">to stay/live</div>
+                </div>
+                <div class="verb-checkbox">
+                    <input type="checkbox" id="verb-5" checked>
+                    <label for="verb-5">θέλω</label>
+                    <div class="verb-meaning">to want</div>
+                </div>
+                <div class="verb-checkbox">
+                    <input type="checkbox" id="verb-6" checked>
+                    <label for="verb-6">ακούω</label>
+                    <div class="verb-meaning">to listen/hear</div>
+                </div>
+                <div class="verb-checkbox">
+                    <input type="checkbox" id="verb-7" checked>
+                    <label for="verb-7">βλέπω</label>
+                    <div class="verb-meaning">to see/watch</div>
+                </div>
+                <div class="verb-checkbox">
+                    <input type="checkbox" id="verb-10" checked>
+                    <label for="verb-10">πίνω</label>
+                    <div class="verb-meaning">to drink</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Group: First conjugation, A group - irregular -->
+        <div class="selection-group">
+            <div class="selection-group-header">
+                <div class="selection-group-title">First conjugation, A group - irregular</div>
+                <button class="toggle-button" data-target="first-conj-a-irregular">More</button>
+            </div>
+            <div class="verb-checkbox-container" id="first-conj-a-irregular">
+                <div class="verb-checkbox">
+                    <input type="checkbox" id="verb-3" checked>
+                    <label for="verb-3">έχω</label>
+                    <div class="verb-meaning">to have</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Group: First conjugation, B group -->
+        <div class="selection-group">
+            <div class="selection-group-header">
+                <div class="selection-group-title">First conjugation, B group</div>
+                <button class="toggle-button" data-target="first-conj-b">More</button>
+            </div>
+            <div class="verb-checkbox-container" id="first-conj-b">
+                <div class="verb-checkbox">
+                    <input type="checkbox" id="verb-4" checked>
+                    <label for="verb-4">κάνω</label>
+                    <div class="verb-meaning">to do/make</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Group: First conjugation, contracted -->
+        <div class="selection-group">
+            <div class="selection-group-header">
+                <div class="selection-group-title">First conjugation, contracted</div>
+                <button class="toggle-button" data-target="first-conj-contracted">More</button>
+            </div>
+            <div class="verb-checkbox-container" id="first-conj-contracted">
+                <div class="verb-checkbox">
+                    <input type="checkbox" id="verb-8" checked>
+                    <label for="verb-8">μιλάω</label>
+                    <div class="verb-meaning">to speak/talk</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Group: First conjugation, irregular -->
+        <div class="selection-group">
+            <div class="selection-group-header">
+                <div class="selection-group-title">First conjugation, irregular</div>
+                <button class="toggle-button" data-target="first-conj-irregular">More</button>
+            </div>
+            <div class="verb-checkbox-container" id="first-conj-irregular">
+                <div class="verb-checkbox">
+                    <input type="checkbox" id="verb-9" checked>
+                    <label for="verb-9">τρώω</label>
+                    <div class="verb-meaning">to eat</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Group: Irregular verb -->
+        <div class="selection-group">
+            <div class="selection-group-header">
+                <div class="selection-group-title">Irregular verb</div>
+                <button class="toggle-button" data-target="irregular-verb">More</button>
+            </div>
+            <div class="verb-checkbox-container" id="irregular-verb">
+                <div class="verb-checkbox">
+                    <input type="checkbox" id="verb-2" checked>
+                    <label for="verb-2">είμαι</label>
+                    <div class="verb-meaning">to be</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alphabetical view -->
+    <div id="alphabetical-view" class="verb-checkbox-container" style="display:none;">
+        <!-- Will be populated by JavaScript -->
+    </div>
+
+    <!-- By difficulty status view -->
+    <div id="status-view" class="selection-groups" style="display:none;">
+        <!-- Will be populated by JavaScript -->
+    </div>
+
+    <div class="selection-summary">
+        Selected: <span id="selected-count">10</span> of <span id="total-verbs">10</span> verbs
+    </div>
+
+    <div class="selection-actions">
+        <div>
+            <button id="select-all-btn">Select All</button>
+            <button id="deselect-all-btn">Deselect All</button>
+        </div>
+        <button id="start-quiz-btn">Start Quiz</button>
+    </div>
+</div>
+
+<!-- QUIZ SCREEN -->
+<div id="quiz-section" class="quiz-container" style="display:none;">
+    <div class="session-header">
+        <h2 class="session-title">Greek Verb Quiz</h2>
+    </div>
+
+    <div class="control-panel">
+        <div class="score">Score: <span id="score">0</span></div>
+        <div class="progress">Question <span id="current-question">1</span> of <span id="total-questions">10</span></div>
+    </div>
+
+    <div id="question-container" class="question-container">
+        <div class="question-text" id="question-text">What is the Greek word for "to stay/live"?</div>
+        <div class="question-details" id="question-details">Enter the first person singular form (I form)</div>
+        <div class="verb-group" id="verb-group">First conjugation, A group</div>
+    </div>
+
+    <div class="answer-container">
+        <input type="text" id="answer-input" placeholder="Type your answer in Greek..." autocomplete="off">
+        <div id="feedback" class="feedback"></div>
+        <div id="hint" class="hint"></div>
+    </div>
+
+    <div class="buttons">
+        <div>
+            <button id="hint-btn" class="hint-btn">Show Hint</button>
+            <button id="submit-btn">Check Answer</button>
+        </div>
+        <button id="next-btn" class="next-btn">Continue</button>
+    </div>
+
+    <div class="difficulty-buttons" id="difficulty-buttons">
+        <div class="difficulty-prompt">How well did you know this?</div>
+        <div class="difficulty-options">
+            <button class="difficulty-btn hard-btn" data-difficulty="hard">
+                Hard
+                <span class="next-review">Review in 10 min</span>
+            </button>
+            <button class="difficulty-btn medium-btn" data-difficulty="medium">
+                Medium
+                <span class="next-review">Review in 1 hour</span>
+            </button>
+            <button class="difficulty-btn easy-btn" data-difficulty="easy">
+                Easy
+                <span class="next-review">Review in 1 day</span>
+            </button>
+            <button class="difficulty-btn learned-btn" data-difficulty="learned">
+                Learned
+                <span class="next-review">Review in 5 days</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="session-stats">
+        <div>Session duration: <span id="session-time">00:00</span></div>
+        <div>Accuracy: <span id="accuracy">0</span>%</div>
+    </div>
+</div>
+
+<!-- PROGRESS SCREEN -->
+<div id="progress-section" class="progress-container" style="display:none;">
+    <div class="session-header">
+        <h2 class="session-title">Your Learning Progress</h2>
+    </div>
+
+    <div class="progress-summary">
+        <div class="summary-item">
+            <span class="summary-label">Overall Mastery:</span>
+            <span class="summary-value" id="overall-mastery">42%</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Total Answers:</span>
+            <span class="summary-value" id="total-answers">15</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Overall Accuracy:</span>
+            <span class="summary-value" id="overall-accuracy">73%</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Last Practice:</span>
+            <span class="summary-value" id="last-practice">Just now</span>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <div class="chart-placeholder" style="display: none;">Mastery chart will appear after more practice sessions</div>
+        <div class="bar-container" id="mastery-chart">
+            <!-- Bars will be added by JavaScript -->
+            <div class="bar-group">
+                <div class="bar" style="height: 36px; background-color: #dc3545;"></div>
+                <div class="bar-label">είμαι</div>
+            </div>
+            <div class="bar-group">
+                <div class="bar" style="height: 50px; background-color: #ffc107;"></div>
+                <div class="bar-label">θέλω</div>
+            </div>
+            <div class="bar-group">
+                <div class="bar" style="height: 90px; background-color: #28a745;"></div>
+                <div class="bar-label">έχω</div>
+            </div>
+            <div class="bar-group">
+                <div class="bar" style="height: 30px; background-color: #dc3545;"></div>
+                <div class="bar-label">κάνω</div>
+            </div>
+            <div class="bar-group">
+                <div class="bar" style="height: 70px; background-color: #28a745;"></div>
+                <div class="bar-label">μένω</div>
+            </div>
+            <div class="bar-group">
+                <div class="bar" style="height: 55px; background-color: #ffc107;"></div>
+                <div class="bar-label">ακούω</div>
+            </div>
+            <div class="bar-group">
+                <div class="bar" style="height: 40px; background-color: #ffc107;"></div>
+                <div class="bar-label">βλέπω</div>
+            </div>
+            <div class="bar-group">
+                <div class="bar" style="height: 20px; background-color: #dc3545;"></div>
+                <div class="bar-label">μιλάω</div>
+            </div>
+            <div class="bar-group">
+                <div class="bar" style="height: 25px; background-color: #dc3545;"></div>
+                <div class="bar-label">τρώω</div>
+            </div>
+            <div class="bar-group">
+                <div class="bar" style="height: 45px; background-color: #ffc107;"></div>
+                <div class="bar-label">πίνω</div>
+            </div>
+        </div>
+    </div>
+
+    <table class="progress-table">
+        <thead>
+        <tr>
+            <th>Verb</th>
+            <th>Meaning</th>
+            <th>Mastery</th>
+            <th>Current Status</th>
+            <th>Next Review</th>
+        </tr>
+        </thead>
+        <tbody id="progress-table-body">
+        <tr>
+            <td>είμαι</td>
+            <td>to be</td>
+            <td>
+                <div class="mastery-bar">
+                    <div class="mastery-level mastery-low" style="width: 20%;"></div>
+                </div>
+            </td>
+            <td><span class="due-count due-hard">Hard</span></td>
+            <td>Due now</td>
+        </tr>
+        <tr>
+            <td>έχω</td>
+            <td>to have</td>
+            <td>
+                <div class="mastery-bar">
+                    <div class="mastery-level mastery-high" style="width: 90%;"></div>
+                </div>
+            </td>
+            <td><span class="due-count due-easy">Easy</span></td>
+            <td>Tomorrow at 15:30</td>
+        </tr>
+        <tr>
+            <td>κάνω</td>
+            <td>to do/make</td>
+            <td>
+                <div class="mastery-bar">
+                    <div class="mastery-level mastery-low" style="width: 15%;"></div>
+                </div>
+            </td>
+            <td><span class="due-count due-hard">Hard</span></td>
+            <td>Due now</td>
+        </tr>
+        <tr>
+            <td>μένω</td>
+            <td>to stay/live</td>
+            <td>
+                <div class="mastery-bar">
+                    <div class="mastery-level mastery-high" style="width: 70%;"></div>
+                </div>
+            </td>
+            <td><span class="due-count due-medium">Medium</span></td>
+            <td>Today at 18:45</td>
+        </tr>
+        <tr>
+            <td>θέλω</td>
+            <td>to want</td>
+            <td>
+                <div class="mastery-bar">
+                    <div class="mastery-level mastery-medium" style="width: 50%;"></div>
+                </div>
+            </td>
+            <td><span class="due-count due-medium">Medium</span></td>
+            <td>Today at 19:15</td>
+        </tr>
+        <tr>
+            <td>ακούω</td>
+            <td>to listen/hear</td>
+            <td>
+                <div class="mastery-bar">
+                    <div class="mastery-level mastery-medium" style="width: 55%;"></div>
+                </div>
+            </td>
+            <td><span class="due-count due-medium">Medium</span></td>
+            <td>Today at 20:00</td>
+        </tr>
+        <tr>
+            <td>βλέπω</td>
+            <td>to see/watch</td>
+            <td>
+                <div class="mastery-bar">
+                    <div class="mastery-level mastery-medium" style="width: 40%;"></div>
+                </div>
+            </td>
+            <td><span class="due-count due-easy">Easy</span></td>
+            <td>Tomorrow at 12:30</td>
+        </tr>
+        <tr>
+            <td>μιλάω</td>
+            <td>to speak/talk</td>
+            <td>
+                <div class="mastery-bar">
+                    <div class="mastery-level mastery-low" style="width: 20%;"></div>
+                </div>
+            </td>
+            <td><span class="due-count due-hard">Hard</span></td>
+            <td>In 5 minutes</td>
+        </tr>
+        <tr>
+            <td>τρώω</td>
+            <td>to eat</td>
+            <td>
+                <div class="mastery-bar">
+                    <div class="mastery-level mastery-low" style="width: 25%;"></div>
+                </div>
+            </td>
+            <td><span class="due-count due-hard">Hard</span></td>
+            <td>In 8 minutes</td>
+        </tr>
+        <tr>
+            <td>πίνω</td>
+            <td>to drink</td>
+            <td>
+                <div class="mastery-bar">
+                    <div class="mastery-level mastery-medium" style="width: 45%;"></div>
+                </div>
+            </td>
+            <td><span class="due-count due-learned">Learned</span></td>
+            <td>In 3 days</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="review-history">
+        <div class="review-history-title">Recent Activity</div>
+        <div class="history-item">
+            <span class="history-verb">κάνω</span>
+            <span class="history-result incorrect">Incorrect</span>
+            <span class="history-time">2 minutes ago</span>
+        </div>
+        <div class="history-item">
+            <span class="history-verb">έχω</span>
+            <span class="history-result correct">Correct (Easy)</span>
+            <span class="history-time">5 minutes ago</span>
+        </div>
+        <div class="history-item">
+            <span class="history-verb">είμαι</span>
+            <span class="history-result correct">Correct (Hard)</span>
+            <span class="history-time">7 minutes ago</span>
+        </div>
+        <div class="history-item">
+            <span class="history-verb">μένω</span>
+            <span class="history-result correct">Correct (Medium)</span>
+            <span class="history-time">10 minutes ago</span>
+        </div>
+        <div class="history-item">
+            <span class="history-verb">θέλω</span>
+            <span class="history-result correct">Correct (Learned)</span>
+            <span class="history-time">12 minutes ago</span>
+        </div>
+    </div>
+</div>
+
+<!-- RESULTS SCREEN -->
+<div id="results-container" class="results-container">
+    <div class="results-header">Quiz Completed!</div>
+    <div class="results-score"><span id="final-score">8</span>/<span id="result-total">10</span></div>
+    <div id="performance-message">Great job! You're getting the hang of Greek verbs!</div>
+
+    <div class="review-history" style="margin: 20px 0; text-align: left;">
+        <div style="margin-bottom: 10px; font-weight: bold;">Session Summary:</div>
+        <div class="history-item">
+            <span class="history-verb">είμαι</span>
+            <span class="history-result correct">Correct (Medium)</span>
+        </div>
+        <div class="history-item">
+            <span class="history-verb">έχω</span>
+            <span class="history-result correct">Correct (Easy)</span>
+        </div>
+        <div class="history-item">
+            <span class="history-verb">κάνω</span>
+            <span class="history-result incorrect">Incorrect</span>
+        </div>
+        <div class="history-item">
+            <span class="history-verb">μένω</span>
+            <span class="history-result correct">Correct (Learned)</span>
+        </div>
+        <div class="history-item">
+            <span class="history-verb">θέλω</span>
+            <span class="history-result correct">Correct (Medium)</span>
+        </div>
+    </div>
+
+    <button id="restart-btn" class="restart-btn">Start New Session</button>
+</div>
+
+<script>
+    // Our verb database
+    const verbs = [
+        {
+            id: 1,
+            greek: "μένω",
+            english: "to stay/live",
+            hint: "Starts with 'μ' and ends with 'ω'",
+            group: "First conjugation, A group"
+        },
+        {
+            id: 2,
+            greek: "είμαι",
+            english: "to be",
+            hint: "An irregular verb",
+            group: "Irregular verb"
+        },
+        {
+            id: 3,
+            greek: "έχω",
+            english: "to have",
+            hint: "Starts with 'έ' and has a 'χ' in it",
+            group: "First conjugation, A group - irregular"
+        },
+        {
+            id: 4,
+            greek: "κάνω",
+            english: "to do/make",
+            hint: "Starts with 'κ' and has an accent on the first syllable",
+            group: "First conjugation, B group"
+        },
+        {
+            id: 5,
+            greek: "θέλω",
+            english: "to want",
+            hint: "Starts with 'θ' and has an accent on the first syllable",
+            group: "First conjugation, A group"
+        },
+        {
+            id: 6,
+            greek: "ακούω",
+            english: "to listen/hear",
+            hint: "Starts with 'α' and has 'κ' in it",
+            group: "First conjugation, A group"
+        },
+        {
+            id: 7,
+            greek: "βλέπω",
+            english: "to see/watch",
+            hint: "Has 'β' at the beginning",
+            group: "First conjugation, A group"
+        },
+        {
+            id: 8,
+            greek: "μιλάω",
+            english: "to speak/talk",
+            hint: "Contracted verb ending in -άω",
+            group: "First conjugation, contracted"
+        },
+        {
+            id: 9,
+            greek: "τρώω",
+            english: "to eat",
+            hint: "Starts with 'τρ'",
+            group: "First conjugation, irregular"
+        },
+        {
+            id: 10,
+            greek: "πίνω",
+            english: "to drink",
+            hint: "Starts with 'π' and ends with 'νω'",
+            group: "First conjugation, A group"
+        }
+    ];
+
+    // Basic tab functionality
+    function showSection(sectionId) {
+        // Hide all sections
+        document.querySelectorAll('.quiz-container, .progress-container, .selection-container, .settings-container').forEach(el => {
+            el.style.display = 'none';
+        });
+
+        // Show the selected section
+        document.getElementById(sectionId).style.display = 'block';
+    }
+
+    function setActiveTab(tabId) {
+        // Remove active class from all tabs
+        document.querySelectorAll('.tab-button').forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        // Add active class to selected tab
+        document.getElementById(tabId).classList.add('active');
+    }
+
+    // Direct inline handlers - the most reliable approach
+    document.getElementById('understand-btn').onclick = function() {
+        document.getElementById('tutorial-overlay').style.display = 'none';
+    };
+
+    document.getElementById('quiz-tab').onclick = function() {
+        showSection('quiz-section');
+        setActiveTab('quiz-tab');
+    };
+
+    document.getElementById('selection-tab').onclick = function() {
+        showSection('selection-section');
+        setActiveTab('selection-tab');
+    };
+
+    document.getElementById('settings-tab').onclick = function() {
+        showSection('settings-section');
+        setActiveTab('settings-tab');
+    };
+
+    document.getElementById('progress-tab').onclick = function() {
+        showSection('progress-section');
+        setActiveTab('progress-tab');
+    };
+
+    document.getElementById('start-quiz-btn').onclick = function() {
+        showSection('quiz-section');
+        setActiveTab('quiz-tab');
+    };
+
+    // Toggle More/Less buttons for verb groups
+    document.querySelectorAll('.toggle-button').forEach(button => {
+        button.onclick = function() {
+            const targetId = this.getAttribute('data-target');
+            const targetContainer = document.getElementById(targetId);
+
+            if (targetContainer.classList.contains('expanded')) {
+                // Collapse
+                targetContainer.classList.remove('expanded');
+                this.textContent = 'More';
+            } else {
+                // Expand
+                targetContainer.classList.add('expanded');
+                this.textContent = 'Less';
+            }
+        };
+    });
+
+    // Quiz state and variables - definitions only, initialized in initializeApp()
+    let currentQuestion = 0;
+    let score = 0;
+    let questionsAsked = [];
+    let totalAnswered = 0;
+    let correctAnswers = 0;
+    let sessionStartTime = null;
+    let currentVerbId = null;
+    let selectedVerbs = verbs.map(verb => verb.id);
+    let verbProgress = [];
+    let intervalSettings = {
+        hard: 10,
+        medium: 60,
+        easy: 1440,
+        learned: 7200
+    };
+    let quizSettings = {
+        mode: 'due',
+        maxQuestions: 10,
+        caseSensitivity: 'insensitive'
+    };
+    let sessionHistory = [];
+    let sessionTimer;
+
+    // Initialize the app when the page loads
+    function initializeApp() {
+        // Initialize progress data
+        initializeProgressData();
+
+        // Load settings from form elements
+        loadSettingsFromForm();
+
+        // Update difficulty buttons with current interval settings
+        updateDifficultyButtonTexts();
+
+        // Quiz event listeners
+        document.getElementById('submit-btn').onclick = checkAnswer;
+        document.getElementById('next-btn').onclick = showDifficultyOptions;
+        document.getElementById('hint-btn').onclick = showHint;
+        document.getElementById('restart-btn').onclick = switchToSelectionTab;
+
+        // Settings event listeners
+        document.getElementById('save-settings-btn').onclick = saveSettings;
+
+        // Selection event listeners
+        document.getElementById('view-by-group').onclick = showGroupView;
+        document.getElementById('view-alphabetical').onclick = showAlphabeticalView;
+        document.getElementById('view-by-status').onclick = showStatusView;
+        document.getElementById('search-input').addEventListener('input', function() {
+            filterVerbs(this.value);
+        });
+        document.getElementById('select-all-btn').onclick = selectAllVerbs;
+        document.getElementById('deselect-all-btn').onclick = deselectAllVerbs;
+        document.getElementById('select-due-btn').onclick = selectDueVerbs;
+
+        // Difficulty buttons event listeners
+        document.querySelectorAll('.difficulty-btn').forEach(button => {
+            button.onclick = function() {
+                const difficulty = this.getAttribute('data-difficulty');
+                processDifficultyFeedback(difficulty);
+            };
+        });
+
+        // Keyboard events
+        document.getElementById('answer-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                if (document.getElementById('submit-btn').style.display !== 'none') {
+                    checkAnswer();
+                } else if (document.getElementById('next-btn').style.display !== 'none') {
+                    showDifficultyOptions();
+                }
+            }
+        });
+    }
+
+    // Initialize progress data
+    function initializeProgressData() {
+        // Create initial progress data for each verb
+        verbProgress = verbs.map(verb => {
+            // Generate random mastery level for demonstration
+            const randomMastery = Math.floor(Math.random() * 100);
+
+            // Determine status based on mastery level
+            let status;
+            if (randomMastery < 30) {
+                status = 'hard';
+            } else if (randomMastery < 60) {
+                status = 'medium';
+            } else if (randomMastery < 80) {
+                status = 'easy';
+            } else {
+                status = 'learned';
+            }
+
+            // Calculate next review date based on status
+            const nextReview = calculateNextReview(status);
+
+            return {
+                verbId: verb.id,
+                correctCount: Math.floor(Math.random() * 10),
+                incorrectCount: Math.floor(Math.random() * 5),
+                lastAttempted: new Date(Date.now() - Math.random() * 86400000).toISOString(),
+                masteryLevel: randomMastery,
+                status: status,
+                nextReview: nextReview
+            };
+        });
+
+        updateDueCounts();
+        populateStatusView();
+    }
+
+    // Load settings from form elements
+    function loadSettingsFromForm() {
+        // Convert form values to minutes for internal storage
+        const convertToMinutes = (value, unit) => {
+            switch(unit) {
+                case 'minutes': return parseInt(value);
+                case 'hours': return parseInt(value) * 60;
+                case 'days': return parseInt(value) * 1440;
+                default: return parseInt(value);
+            }
+        };
+
+        intervalSettings.hard = convertToMinutes(
+            document.getElementById('hard-interval').value,
+            document.getElementById('hard-unit').value
+        );
+        intervalSettings.medium = convertToMinutes(
+            document.getElementById('medium-interval').value,
+            document.getElementById('medium-unit').value
+        );
+        intervalSettings.easy = convertToMinutes(
+            document.getElementById('easy-interval').value,
+            document.getElementById('easy-unit').value
+        );
+        intervalSettings.learned = convertToMinutes(
+            document.getElementById('learned-interval').value,
+            document.getElementById('learned-unit').value
+        );
+
+        quizSettings.mode = document.getElementById('quiz-mode').value;
+        quizSettings.maxQuestions = parseInt(document.getElementById('session-size').value);
+        quizSettings.caseSensitivity = document.getElementById('case-sensitivity').value;
+    }
+
+    // Save settings from form
+    function saveSettings() {
+        loadSettingsFromForm();
+        updateDifficultyButtonTexts();
+        alert("Settings saved successfully!");
+    }
+
+    // Update difficulty button text with current interval settings
+    function updateDifficultyButtonTexts() {
+        const formatInterval = (minutes) => {
+            if (minutes < 60) {
+                return `${minutes} min`;
+            } else if (minutes < 1440) {
+                return `${Math.floor(minutes / 60)} hour${Math.floor(minutes / 60) !== 1 ? 's' : ''}`;
+            } else {
+                return `${Math.floor(minutes / 1440)} day${Math.floor(minutes / 1440) !== 1 ? 's' : ''}`;
+            }
+        };
+
+        document.querySelector('.hard-btn .next-review').textContent = `Review in ${formatInterval(intervalSettings.hard)}`;
+        document.querySelector('.medium-btn .next-review').textContent = `Review in ${formatInterval(intervalSettings.medium)}`;
+        document.querySelector('.easy-btn .next-review').textContent = `Review in ${formatInterval(intervalSettings.easy)}`;
+        document.querySelector('.learned-btn .next-review').textContent = `Review in ${formatInterval(intervalSettings.learned)}`;
+    }
+
+    // Calculate next review date based on difficulty status
+    function calculateNextReview(difficulty) {
+        const now = new Date();
+        const minutesToAdd = intervalSettings[difficulty];
+        const nextReview = new Date(now.getTime() + minutesToAdd * 60000);
+        return nextReview.toISOString();
+    }
+
+    // Update due counts for verbs
+    function updateDueCounts() {
+        const now = new Date();
+
+        // Count verbs by status
+        let hardCount = 0;
+        let mediumCount = 0;
+        let easyCount = 0;
+        let learnedCount = 0;
+
+        verbProgress.forEach(progress => {
+            const nextReview = new Date(progress.nextReview);
+            if (nextReview <= now) {
+                // Due now - count by status
+                switch(progress.status) {
+                    case 'hard': hardCount++; break;
+                    case 'medium': mediumCount++; break;
+                    case 'easy': easyCount++; break;
+                    case 'learned': learnedCount++; break;
+                }
+            }
+        });
+
+        // Update the counts in the UI
+        document.getElementById('due-hard-count').textContent = hardCount;
+        document.getElementById('due-medium-count').textContent = mediumCount;
+        document.getElementById('due-easy-count').textContent = easyCount;
+        document.getElementById('due-learned-count').textContent = learnedCount;
+    }
+
+    // Populate the status view
+    function populateStatusView() {
+        const statusView = document.getElementById('status-view');
+        statusView.innerHTML = '';
+
+        // Create sections for each status
+        const statuses = ['hard', 'medium', 'easy', 'learned'];
+        const statusLabels = {
+            'hard': 'Hard - Needs More Practice',
+            'medium': 'Medium - Getting There',
+            'easy': 'Easy - Almost Mastered',
+            'learned': 'Learned - Well Known'
+        };
+        const statusClasses = {
+            'hard': 'due-hard',
+            'medium': 'due-medium',
+            'easy': 'due-easy',
+            'learned': 'due-learned'
+        };
+
+        statuses.forEach(status => {
+            const statusVerbs = verbs.filter(verb => {
+                const progress = verbProgress.find(p => p.verbId === verb.id);
+                return progress && progress.status === status;
+            });
+
+            if (statusVerbs.length > 0) {
+                const statusSection = document.createElement('div');
+                statusSection.className = 'selection-group';
+
+                // Create header with More/Less button
+                const statusHeader = document.createElement('div');
+                statusHeader.className = 'selection-group-header';
+
+                const statusTitle = document.createElement('div');
+                statusTitle.className = `selection-group-title ${statusClasses[status]}`;
+                statusTitle.textContent = `${statusLabels[status]} (${statusVerbs.length})`;
+
+                const toggleButton = document.createElement('button');
+                toggleButton.className = 'toggle-button';
+                toggleButton.textContent = 'More';
+                toggleButton.setAttribute('data-target', `status-${status}`);
+                toggleButton.onclick = function() {
+                    const targetId = this.getAttribute('data-target');
+                    const targetContainer = document.getElementById(targetId);
+
+                    if (targetContainer.classList.contains('expanded')) {
+                        // Collapse
+                        targetContainer.classList.remove('expanded');
+                        this.textContent = 'More';
+                    } else {
+                        // Expand
+                        targetContainer.classList.add('expanded');
+                        this.textContent = 'Less';
+                    }
+                };
+
+                statusHeader.appendChild(statusTitle);
+                statusHeader.appendChild(toggleButton);
+
+                const verbContainer = document.createElement('div');
+                verbContainer.className = 'verb-checkbox-container';
+                verbContainer.id = `status-${status}`;
+
+                // Add verbs to this status
+                statusVerbs.forEach(verb => {
+                    const verbElement = createVerbCheckbox(verb);
+                    verbContainer.appendChild(verbElement);
+                });
+
+                statusSection.appendChild(statusHeader);
+                statusSection.appendChild(verbContainer);
+                statusView.appendChild(statusSection);
+            }
+        });
+    }
+
+    // Create a checkbox element for a verb
+    function createVerbCheckbox(verb) {
+        const container = document.createElement('div');
+        container.className = 'verb-checkbox';
+        container.setAttribute('data-verb-id', verb.id);
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `verb-${verb.id}`;
+        checkbox.checked = selectedVerbs.includes(verb.id);
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                if (!selectedVerbs.includes(verb.id)) {
+                    selectedVerbs.push(verb.id);
+                }
+            } else {
+                selectedVerbs = selectedVerbs.filter(id => id !== verb.id);
+            }
+            updateSelectionSummary();
+        });
+
+        const label = document.createElement('label');
+        label.htmlFor = `verb-${verb.id}`;
+        label.textContent = verb.greek;
+
+        const progress = verbProgress.find(p => p.verbId === verb.id);
+        const meaning = document.createElement('div');
+        meaning.className = 'verb-meaning';
+
+        // Show due date if available
+        if (progress && progress.nextReview) {
+            const nextReview = new Date(progress.nextReview);
+            const now = new Date();
+
+            // Show status and due time
+            if (nextReview <= now) {
+                meaning.textContent = `${verb.english} (Due now)`;
+            } else {
+                meaning.textContent = `${verb.english} (Due: ${formatRelativeTime(nextReview)})`;
+            }
+        } else {
+            meaning.textContent = verb.english;
+        }
+
+        container.appendChild(checkbox);
+        container.appendChild(label);
+        container.appendChild(meaning);
+
+        return container;
+    }
+
+    // Format a date as relative time
+    function formatRelativeTime(date) {
+        const now = new Date();
+        const diffMs = date - now;
+        const diffMinutes = Math.floor(diffMs / 60000);
+
+        if (diffMinutes < 0) {
+            return 'Now';
+        } else if (diffMinutes < 60) {
+            return `${diffMinutes} min`;
+        } else if (diffMinutes < 1440) {
+            return `${Math.floor(diffMinutes / 60)} hour${Math.floor(diffMinutes / 60) !== 1 ? 's' : ''}`;
+        } else {
+            return `${Math.floor(diffMinutes / 1440)} day${Math.floor(diffMinutes / 1440) !== 1 ? 's' : ''}`;
+        }
+    }
+
+    // Update the selection summary
+    function updateSelectionSummary() {
+        document.getElementById('selected-count').textContent = selectedVerbs.length;
+        document.getElementById('total-verbs').textContent = verbs.length;
+
+        // Disable start button if no verbs are selected
+        document.getElementById('start-quiz-btn').disabled = selectedVerbs.length === 0;
+    }
+
+    // Filter verbs by search query
+    function filterVerbs(query) {
+        if (!query) {
+            // Show all verbs if query is empty
+            document.querySelectorAll('.verb-checkbox').forEach(element => {
+                element.style.display = 'flex';
+            });
+            document.querySelectorAll('.selection-group').forEach(element => {
+                element.style.display = 'block';
+            });
+
+            // Remove any existing no results message
+            document.querySelectorAll('.no-results').forEach(el => el.remove());
+            return;
+        }
+
+        query = query.toLowerCase();
+        let hasResults = false;
+
+        // Hide verbs that don't match the query
+        document.querySelectorAll('.verb-checkbox').forEach(element => {
+            const verbId = parseInt(element.getAttribute('data-verb-id'));
+            const verb = verbs.find(v => v.id === verbId);
+
+            if (verb.greek.toLowerCase().includes(query) ||
+                verb.english.toLowerCase().includes(query) ||
+                verb.group.toLowerCase().includes(query)) {
+                element.style.display = 'flex';
+                hasResults = true;
+            } else {
+                element.style.display = 'none';
+            }
+        });
+
+        // Hide empty groups
+        const activeView = document.querySelector('#group-view:not([style*="display: none"]), #status-view:not([style*="display: none"])');
+        if (activeView) {
+            activeView.querySelectorAll('.selection-group').forEach(group => {
+                const visibleVerbs = Array.from(group.querySelectorAll('.verb-checkbox')).some(
+                    element => element.style.display !== 'none'
+                );
+
+                group.style.display = visibleVerbs ? 'block' : 'none';
+            });
+        }
+
+        // Show no results message if needed
+        if (!hasResults) {
+            // Remove any existing no results messages first
+            document.querySelectorAll('.no-results').forEach(el => el.remove());
+
+            const activeViewElement = document.querySelector('#group-view:not([style*="display: none"]), #alphabetical-view:not([style*="display: none"]), #status-view:not([style*="display: none"])');
+
+            if (activeViewElement) {
+                const noResults = document.createElement('div');
+                noResults.className = 'no-results';
+                noResults.textContent = 'No verbs match your search.';
+                activeViewElement.appendChild(noResults);
+            }
+        } else {
+            // Remove any existing no results message
+            document.querySelectorAll('.no-results').forEach(el => el.remove());
+        }
+    }
+
+    // Initialize the quiz
+    function initQuiz() {
+        // Update settings from form
+        loadSettingsFromForm();
+
+        currentQuestion = 0;
+        score = 0;
+        totalAnswered = 0;
+        correctAnswers = 0;
+        sessionHistory = [];
+
+        // Only include selected verbs
+        const selectedVerbIds = verbs
+            .filter(verb => selectedVerbs.includes(verb.id))
+            .map(verb => verb.id);
+
+        // Check if we have any verbs selected
+        if (selectedVerbIds.length === 0) {
+            alert("Please select at least one verb to practice.");
+            return;
+        }
+
+        // Create question list based on quiz mode
+        if (quizSettings.mode === 'due') {
+            // Due verbs first mode: prioritize verbs by due date
+            questionsAsked = createDueFirstQuiz(selectedVerbIds);
+        } else {
+            // Random mode: shuffle all selected verbs
+            questionsAsked = shuffleArray([...selectedVerbIds]);
+        }
+
+        // Limit to max questions
+        if (questionsAsked.length > quizSettings.maxQuestions) {
+            questionsAsked = questionsAsked.slice(0, quizSettings.maxQuestions);
+        }
+
+        // Reset session timer
+        sessionStartTime = new Date();
+        startSessionTimer();
+
+        document.getElementById('score').textContent = score;
+        document.getElementById('current-question').textContent = currentQuestion + 1;
+        document.getElementById('total-questions').textContent = questionsAsked.length;
+        document.getElementById('result-total').textContent = questionsAsked.length;
+        document.getElementById('accuracy').textContent = '0';
+
+        loadQuestion();
+
+        // Switch to quiz tab
+        switchToQuizTab();
+    }
+
+    // Create a due-first quiz
+    function createDueFirstQuiz(verbIds) {
+        const now = new Date();
+
+        // Sort verbs by due date (earliest first)
+        const sortedIds = [...verbIds].sort((a, b) => {
+            const progressA = verbProgress.find(p => p.verbId === a);
+            const progressB = verbProgress.find(p => p.verbId === b);
+
+            if (!progressA || !progressB) return 0;
+
+            const dateA = new Date(progressA.nextReview);
+            const dateB = new Date(progressB.nextReview);
+
+            // Calculate priority - due verbs first, then by due date
+            const priorityA = dateA <= now ? -1 : dateA.getTime();
+            const priorityB = dateB <= now ? -1 : dateB.getTime();
+
+            return priorityA - priorityB;
+        });
+
+        return sortedIds;
+    }
+
+    // Load a question
+    function loadQuestion() {
+        currentVerbId = questionsAsked[currentQuestion];
+        const verb = verbs.find(v => v.id === currentVerbId);
+
+        document.getElementById('question-text').textContent = `What is the Greek word for "${verb.english}"?`;
+        document.getElementById('verb-group').textContent = verb.group;
+
+        document.getElementById('answer-input').value = '';
+        document.getElementById('feedback').style.display = 'none';
+        document.getElementById('hint').style.display = 'none';
+        document.getElementById('hint').textContent = verb.hint;
+        document.getElementById('difficulty-buttons').style.display = 'none';
+
+        document.getElementById('submit-btn').style.display = 'inline-block';
+        document.getElementById('next-btn').style.display = 'none';
+
+        document.getElementById('answer-input').focus();
+    }
+
+    // Check the answer
+    function checkAnswer() {
+        const verb = verbs.find(v => v.id === currentVerbId);
+        const userAnswer = document.getElementById('answer-input').value.trim();
+        let isCorrect = false;
+
+        // Check answer based on case sensitivity setting
+        if (quizSettings.caseSensitivity === 'insensitive') {
+            // Case-insensitive check for first letter, case-sensitive for the rest
+            isCorrect = (
+                userAnswer.length > 0 &&
+                userAnswer.charAt(0).toLowerCase() === verb.greek.charAt(0).toLowerCase() &&
+                userAnswer.substring(1) === verb.greek.substring(1)
+            );
+        } else {
+            // Fully case-sensitive check
+            isCorrect = (userAnswer === verb.greek);
+        }
+
+        totalAnswered++;
+
+        if (isCorrect) {
+            // Correct answer
+            document.getElementById('feedback').textContent = `Correct! "${verb.greek}" is the right answer.`;
+            document.getElementById('feedback').className = 'feedback correct';
+            score++;
+            document.getElementById('score').textContent = score;
+            correctAnswers++;
+
+            // Add to session history
+            sessionHistory.push({
+                verbId: currentVerbId,
+                result: 'correct',
+                timestamp: new Date().toISOString(),
+                answer: userAnswer,
+                difficulty: null // Will be set when user rates difficulty
+            });
+        } else {
+            // Incorrect answer
+            document.getElementById('feedback').textContent = `Incorrect. The correct answer is "${verb.greek}".`;
+            document.getElementById('feedback').className = 'feedback incorrect';
+
+            // Add to session history
+            sessionHistory.push({
+                verbId: currentVerbId,
+                result: 'incorrect',
+                timestamp: new Date().toISOString(),
+                answer: userAnswer,
+                difficulty: 'hard' // Automatically set to hard for incorrect answers
+            });
+
+            // Update verb progress for incorrect answer
+            updateVerbProgress(currentVerbId, 'hard');
+        }
+
+        // Update accuracy
+        const accuracyRate = Math.round((correctAnswers / totalAnswered) * 100);
+        document.getElementById('accuracy').textContent = accuracyRate;
+
+        document.getElementById('feedback').style.display = 'block';
+        document.getElementById('submit-btn').style.display = 'none';
+
+        if (isCorrect) {
+            // For correct answers, we'll ask for difficulty rating
+            document.getElementById('next-btn').textContent = 'Continue';
+            document.getElementById('next-btn').style.display = 'inline-block';
+        } else {
+            // For incorrect answers, we'll skip the difficulty rating
+            document.getElementById('next-btn').textContent = 'Next Question';
+            document.getElementById('next-btn').style.display = 'inline-block';
+
+            // If this was the last question, change button text
+            if (currentQuestion === questionsAsked.length - 1) {
+                document.getElementById('next-btn').textContent = 'See Results';
+            }
+        }
+    }
+
+    // Show difficulty options after correct answer
+    function showDifficultyOptions() {
+        const isCorrect = sessionHistory[sessionHistory.length - 1].result === 'correct';
+
+        if (isCorrect) {
+            // Only show difficulty options for correct answers
+            document.getElementById('feedback').style.display = 'none';
+            document.getElementById('difficulty-buttons').style.display = 'flex';
+            document.getElementById('next-btn').style.display = 'none';
+        } else {
+            // For incorrect answers, move directly to next question
+            moveToNextQuestion();
+        }
+    }
+
+    // Process difficulty feedback after correct answer
+    function processDifficultyFeedback(difficulty) {
+        // Update the most recent session history item
+        const historyItem = sessionHistory[sessionHistory.length - 1];
+        if (historyItem && historyItem.result === 'correct') {
+            historyItem.difficulty = difficulty;
+        }
+
+        // Update verb progress
+        updateVerbProgress(currentVerbId, difficulty);
+
+        // Move to next question
+        moveToNextQuestion();
+    }
+
+    // Move to next question or show results
+    function moveToNextQuestion() {
+        currentQuestion++;
+
+        if (currentQuestion < questionsAsked.length) {
+            // Load next question
+            document.getElementById('current-question').textContent = currentQuestion + 1;
+            loadQuestion();
+        } else {
+            // Quiz completed
+            showResults();
+        }
+    }
+
+    // Update verb progress based on difficulty
+    function updateVerbProgress(verbId, difficulty) {
+        const progress = verbProgress.find(p => p.verbId === verbId);
+        if (!progress) return;
+
+        // Update progress based on difficulty
+        if (difficulty === 'hard') {
+            // Hard - decrease mastery level
+            progress.masteryLevel = Math.max(0, progress.masteryLevel - 20);
+            progress.incorrectCount++;
+        } else {
+            // Correct answer - increase mastery based on difficulty
+            progress.correctCount++;
+
+            switch(difficulty) {
+                case 'medium':
+                    progress.masteryLevel = Math.min(100, progress.masteryLevel + 5);
+                    break;
+                case 'easy':
+                    progress.masteryLevel = Math.min(100, progress.masteryLevel + 10);
+                    break;
+                case 'learned':
+                    progress.masteryLevel = Math.min(100, progress.masteryLevel + 15);
+                    break;
+            }
+        }
+
+        // Update status based on new mastery level
+        if (progress.masteryLevel < 30) {
+            progress.status = 'hard';
+        } else if (progress.masteryLevel < 60) {
+            progress.status = 'medium';
+        } else if (progress.masteryLevel < 80) {
+            progress.status = 'easy';
+        } else {
+            progress.status = 'learned';
+        }
+
+        // Calculate next review date based on difficulty
+        progress.nextReview = calculateNextReview(difficulty);
+        progress.lastAttempted = new Date().toISOString();
+
+        // Update UI components
+        updateDueCounts();
+    }
+
+    // Show hint
+    function showHint() {
+        document.getElementById('hint').style.display = 'block';
+    }
+
+    // Show results screen
+    function showResults() {
+        document.getElementById('final-score').textContent = score;
+
+        // Stop the timer
+        clearInterval(sessionTimer);
+
+        // Display performance message based on score
+        if (score === questionsAsked.length) {
+            document.getElementById('performance-message').textContent = "Perfect! You're a Greek verb master!";
+        } else if (score >= questionsAsked.length * 0.7) {
+            document.getElementById('performance-message').textContent = "Great job! You're getting the hang of Greek verbs!";
+        } else if (score >= questionsAsked.length * 0.5) {
+            document.getElementById('performance-message').textContent = "Good effort! Keep practicing to improve.";
+        } else {
+            document.getElementById('performance-message').textContent = "Keep practicing! These verbs need more review.";
+        }
+
+        // Populate session summary
+        populateSessionSummary();
+
+        // Show results container
+        document.getElementById('quiz-section').style.display = 'none';
+        document.getElementById('progress-section').style.display = 'none';
+        document.getElementById('selection-section').style.display = 'none';
+        document.getElementById('settings-section').style.display = 'none';
+        document.getElementById('results-container').style.display = 'block';
+
+        // Remove active class from all tabs
+        document.getElementById('quiz-tab').classList.remove('active');
+        document.getElementById('progress-tab').classList.remove('active');
+        document.getElementById('selection-tab').classList.remove('active');
+        document.getElementById('settings-tab').classList.remove('active');
+    }
+
+    // Populate session summary in results screen
+    function populateSessionSummary() {
+        const summaryContainer = document.querySelector('#results-container .review-history');
+        summaryContainer.innerHTML = '<div style="margin-bottom: 10px; font-weight: bold;">Session Summary:</div>';
+
+        // Add each history item
+        sessionHistory.forEach(item => {
+            const verb = verbs.find(v => v.id === item.verbId);
+            if (!verb) return;
+
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+
+            // Create verb name
+            const verbSpan = document.createElement('span');
+            verbSpan.className = 'history-verb';
+            verbSpan.textContent = verb.greek;
+
+            // Create result
+            const resultSpan = document.createElement('span');
+            resultSpan.className = `history-result ${item.result}`;
+
+            if (item.result === 'correct') {
+                // For correct answers, show difficulty if available
+                if (item.difficulty) {
+                    resultSpan.textContent = `Correct (${item.difficulty.charAt(0).toUpperCase() + item.difficulty.slice(1)})`;
+                } else {
+                    resultSpan.textContent = 'Correct';
+                }
+            } else {
+                resultSpan.textContent = 'Incorrect';
+            }
+
+            historyItem.appendChild(verbSpan);
+            historyItem.appendChild(resultSpan);
+            summaryContainer.appendChild(historyItem);
+        });
+    }
+
+    // Session timer
+    function startSessionTimer() {
+        sessionTimer = setInterval(updateSessionTime, 1000);
+    }
+
+    function updateSessionTime() {
+        const now = new Date();
+        const diffInSeconds = Math.floor((now - sessionStartTime) / 1000);
+        const minutes = Math.floor(diffInSeconds / 60);
+        const seconds = diffInSeconds % 60;
+        document.getElementById('session-time').textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    // Tab switching functions
+    function switchToQuizTab() {
+        if (document.getElementById('quiz-section').style.display === 'none' && document.getElementById('results-container').style.display === 'none') {
+            // If not in an active quiz or results, start a new quiz
+            initQuiz();
+            return;
+        }
+
+        document.getElementById('quiz-section').style.display = 'block';
+        document.getElementById('progress-section').style.display = 'none';
+        document.getElementById('selection-section').style.display = 'none';
+        document.getElementById('settings-section').style.display = 'none';
+        document.getElementById('results-container').style.display = 'none';
+
+        document.getElementById('quiz-tab').classList.add('active');
+        document.getElementById('progress-tab').classList.remove('active');
+        document.getElementById('selection-tab').classList.remove('active');
+        document.getElementById('settings-tab').classList.remove('active');
+    }
+
+    function switchToProgressTab() {
+        document.getElementById('quiz-section').style.display = 'none';
+        document.getElementById('progress-section').style.display = 'block';
+        document.getElementById('selection-section').style.display = 'none';
+        document.getElementById('settings-section').style.display = 'none';
+        document.getElementById('results-container').style.display = 'none';
+
+        document.getElementById('quiz-tab').classList.remove('active');
+        document.getElementById('progress-tab').classList.add('active');
+        document.getElementById('selection-tab').classList.remove('active');
+        document.getElementById('settings-tab').classList.remove('active');
+    }
+
+    function switchToSelectionTab() {
+        document.getElementById('quiz-section').style.display = 'none';
+        document.getElementById('progress-section').style.display = 'none';
+        document.getElementById('selection-section').style.display = 'block';
+        document.getElementById('settings-section').style.display = 'none';
+        document.getElementById('results-container').style.display = 'none';
+
+        document.getElementById('quiz-tab').classList.remove('active');
+        document.getElementById('progress-tab').classList.remove('active');
+        document.getElementById('selection-tab').classList.add('active');
+        document.getElementById('settings-tab').classList.remove('active');
+    }
+
+    function switchToSettingsTab() {
+        document.getElementById('quiz-section').style.display = 'none';
+        document.getElementById('progress-section').style.display = 'none';
+        document.getElementById('selection-section').style.display = 'none';
+        document.getElementById('settings-section').style.display = 'block';
+        document.getElementById('results-container').style.display = 'none';
+
+        document.getElementById('quiz-tab').classList.remove('active');
+        document.getElementById('progress-tab').classList.remove('active');
+        document.getElementById('selection-tab').classList.remove('active');
+        document.getElementById('settings-tab').classList.add('active');
+    }
+
+    // Toggle between different views in selection tab
+    function showGroupView() {
+        document.getElementById('group-view').style.display = 'block';
+        document.getElementById('alphabetical-view').style.display = 'none';
+        document.getElementById('status-view').style.display = 'none';
+
+        document.getElementById('view-by-group').classList.add('active');
+        document.getElementById('view-alphabetical').classList.remove('active');
+        document.getElementById('view-by-status').classList.remove('active');
+
+        filterVerbs(document.getElementById('search-input').value);
+    }
+
+    function showAlphabeticalView() {
+        document.getElementById('group-view').style.display = 'none';
+        document.getElementById('alphabetical-view').style.display = 'grid';
+        document.getElementById('status-view').style.display = 'none';
+
+        document.getElementById('view-by-group').classList.remove('active');
+        document.getElementById('view-alphabetical').classList.add('active');
+        document.getElementById('view-by-status').classList.remove('active');
+
+        // Populate alphabetical view if not already populated
+        if (document.getElementById('alphabetical-view').children.length === 0) {
+            // Sort verbs alphabetically by Greek
+            const sortedVerbs = [...verbs].sort((a, b) => a.greek.localeCompare(b.greek));
+
+            // Add each verb
+            sortedVerbs.forEach(verb => {
+                const verbElement = createVerbCheckbox(verb);
+                document.getElementById('alphabetical-view').appendChild(verbElement);
+            });
+        }
+
+        filterVerbs(document.getElementById('search-input').value);
+    }
+
+    function showStatusView() {
+        document.getElementById('group-view').style.display = 'none';
+        document.getElementById('alphabetical-view').style.display = 'none';
+        document.getElementById('status-view').style.display = 'block';
+
+        document.getElementById('view-by-group').classList.remove('active');
+        document.getElementById('view-alphabetical').classList.remove('active');
+        document.getElementById('view-by-status').classList.add('active');
+
+        // Update status view
+        populateStatusView();
+        filterVerbs(document.getElementById('search-input').value);
+    }
+
+    // Selection actions
+    function selectAllVerbs() {
+        selectedVerbs = verbs.map(verb => verb.id);
+        document.querySelectorAll('.verb-checkbox input[type="checkbox"]').forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        updateSelectionSummary();
+    }
+
+    function deselectAllVerbs() {
+        selectedVerbs = [];
+        document.querySelectorAll('.verb-checkbox input[type="checkbox"]').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        updateSelectionSummary();
+    }
+
+    function selectDueVerbs() {
+        const now = new Date();
+
+        // Find all due verbs
+        const dueVerbIds = verbs
+            .filter(verb => {
+                const progress = verbProgress.find(p => p.verbId === verb.id);
+                return progress && new Date(progress.nextReview) <= now;
+            })
+            .map(verb => verb.id);
+
+        // Update selected verbs
+        selectedVerbs = dueVerbIds;
+
+        // Update checkboxes
+        document.querySelectorAll('.verb-checkbox input[type="checkbox"]').forEach(checkbox => {
+            const verbId = parseInt(checkbox.id.replace('verb-', ''));
+            checkbox.checked = dueVerbIds.includes(verbId);
+        });
+
+        updateSelectionSummary();
+
+        // If no due verbs, show a message
+        if (dueVerbIds.length === 0) {
+            alert("There are no verbs due for review right now.");
+        }
+    }
+
+    // Shuffle array (Fisher-Yates algorithm)
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    // Initialize the app
+    initializeApp();
+
+    // Manually add a direct click handler to the understand button
+    document.getElementById('understand-btn').onclick = function() {
+        document.getElementById('tutorial-overlay').style.display = 'none';
+    };
+</script>
+</body>
+</html>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // DOM elements for tutorial
+        const tutorialOverlay = document.getElementById('tutorial-overlay');
+        const understandBtn = document.getElementById('understand-btn');
+
+        // Explicitly add event listener for the Got it! button
+        if (understandBtn) {
+            understandBtn.onclick = function() {
+                tutorialOverlay.style.display = 'none';
+            };
+        }
+
+        // Direct inline script to immediately make the button work
+        document.querySelector('#understand-btn').addEventListener('click', function() {
+            document.querySelector('#tutorial-overlay').style.display = 'none';
+        });
+
+        // Add just enough code to make the tabs work
+        document.getElementById('quiz-tab').addEventListener('click', function() {
+            showSection('quiz-section');
+            setActiveTab('quiz-tab');
+        });
+
+        document.getElementById('selection-tab').addEventListener('click', function() {
+            showSection('selection-section');
+            setActiveTab('selection-tab');
+        });
+
+        document.getElementById('settings-tab').addEventListener('click', function() {
+            showSection('settings-section');
+            setActiveTab('settings-tab');
+        });
+
+        document.getElementById('progress-tab').addEventListener('click', function() {
+            showSection('progress-section');
+            setActiveTab('progress-tab');
+        });
+
+        // Helper functions for tab navigation
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.quiz-container, .progress-container, .selection-container, .settings-container').forEach(el => {
+                el.style.display = 'none';
+            });
+
+            // Show the selected section
+            document.getElementById(sectionId).style.display = 'block';
+        }
+
+        function setActiveTab(tabId) {
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab-button').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Add active class to selected tab
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // Simple event listener for the start quiz button
+        document.getElementById('start-quiz-btn').addEventListener('click', function() {
+            showSection('quiz-section');
+            setActiveTab('quiz-tab');
+        });
+
+        // NEW: Toggle More/Less buttons for verb groups
+        document.querySelectorAll('.toggle-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                const targetContainer = document.getElementById(targetId);
+
+                if (targetContainer.classList.contains('expanded')) {
+                    // Collapse
+                    targetContainer.classList.remove('expanded');
+                    this.textContent = 'More';
+                } else {
+                    // Expand
+                    targetContainer.classList.add('expanded');
+                    this.textContent = 'Less';
+                }
+            });
+        });
+    });
+
+    // NEW: Toggle More/Less buttons for verb groups
+    document.querySelectorAll('.toggle-button').forEach(button => {
+        button.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-target');
+            const targetContainer = document.getElementById(targetId);
+
+            if (targetContainer.classList.contains('expanded')) {
+                // Collapse
+                targetContainer.classList.remove('expanded');
+                this.textContent = 'More';
+            } else {
+                // Expand
+                targetContainer.classList.add('expanded');
+                this.textContent = 'Less';
+            }
+        });
+    });
+
+    // Quiz state
+    let currentQuestion = 0;
+    let score = 0;
+    let questionsAsked = [];
+    let totalAnswered = 0;
+    let correctAnswers = 0;
+    let sessionStartTime = null;
+    let currentVerbId = null;
+
+    // In-memory storage for selection and progress
+    let selectedVerbs = verbs.map(verb => verb.id); // Default to all verbs selected
+    let verbProgress = [];
+
+    // Interval settings (in minutes) - default values
+    let intervalSettings = {
+        hard: 10,     // 10 minutes
+        medium: 60,   // 1 hour
+        easy: 1440,   // 1 day (24 hours)
+        learned: 7200 // 5 days (120 hours)
+    };
+
+    // Quiz settings
+    let quizSettings = {
+        mode: 'due',   // 'due' or 'random'
+        maxQuestions: 10,
+        caseSensitivity: 'insensitive' // 'insensitive' or 'sensitive'
+    };
+
+    // Session history (for this session only)
+    let sessionHistory = [];
+
+    // DOM elements - Tabs
+    const quizSection = document.getElementById('quiz-section');
+    const progressSection = document.getElementById('progress-section');
+    const selectionSection = document.getElementById('selection-section');
+    const settingsSection = document.getElementById('settings-section');
+    const quizTab = document.getElementById('quiz-tab');
+    const progressTab = document.getElementById('progress-tab');
+    const selectionTab = document.getElementById('selection-tab');
+    const settingsTab = document.getElementById('settings-tab');
+    const tutorialOverlay = document.getElementById('tutorial-overlay');
+    const understandBtn = document.getElementById('understand-btn');
+
+    // DOM elements - Quiz
+    const questionText = document.getElementById('question-text');
+    const questionDetails = document.getElementById('question-details');
+    const verbGroup = document.getElementById('verb-group');
+    const answerInput = document.getElementById('answer-input');
+    const feedbackElement = document.getElementById('feedback');
+    const hintElement = document.getElementById('hint');
+    const scoreElement = document.getElementById('score');
+    const currentQuestionElement = document.getElementById('current-question');
+    const totalQuestionsElement = document.getElementById('total-questions');
+    const submitBtn = document.getElementById('submit-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const hintBtn = document.getElementById('hint-btn');
+    const difficultyButtons = document.getElementById('difficulty-buttons');
+    const resultsContainer = document.getElementById('results-container');
+    const finalScoreElement = document.getElementById('final-score');
+    const resultTotalElement = document.getElementById('result-total');
+    const performanceMessage = document.getElementById('performance-message');
+    const restartBtn = document.getElementById('restart-btn');
+    const sessionTimeElement = document.getElementById('session-time');
+    const accuracyElement = document.getElementById('accuracy');
+
+    // DOM elements - Selection
+    const groupView = document.getElementById('group-view');
+    const alphabeticalView = document.getElementById('alphabetical-view');
+    const statusView = document.getElementById('status-view');
+    const viewByGroupBtn = document.getElementById('view-by-group');
+    const viewAlphabeticalBtn = document.getElementById('view-alphabetical');
+    const viewByStatusBtn = document.getElementById('view-by-status');
+    const searchInput = document.getElementById('search-input');
+    const selectedCountElement = document.getElementById('selected-count');
+    const totalVerbsElement = document.getElementById('total-verbs');
+    const selectAllBtn = document.getElementById('select-all-btn');
+    const deselectAllBtn = document.getElementById('deselect-all-btn');
+    const selectDueBtn = document.getElementById('select-due-btn');
+    const startQuizBtn = document.getElementById('start-quiz-btn');
+    const dueHardCountElement = document.getElementById('due-hard-count');
+    const dueMediumCountElement = document.getElementById('due-medium-count');
+    const dueEasyCountElement = document.getElementById('due-easy-count');
+    const dueLearnedCountElement = document.getElementById('due-learned-count');
+
+    // DOM elements - Settings
+    const hardIntervalInput = document.getElementById('hard-interval');
+    const hardUnitSelect = document.getElementById('hard-unit');
+    const mediumIntervalInput = document.getElementById('medium-interval');
+    const mediumUnitSelect = document.getElementById('medium-unit');
+    const easyIntervalInput = document.getElementById('easy-interval');
+    const easyUnitSelect = document.getElementById('easy-unit');
+    const learnedIntervalInput = document.getElementById('learned-interval');
+    const learnedUnitSelect = document.getElementById('learned-unit');
+    const quizModeSelect = document.getElementById('quiz-mode');
+    const sessionSizeInput = document.getElementById('session-size');
+    const caseSensitivitySelect = document.getElementById('case-sensitivity');
+    const saveSettingsBtn = document.getElementById('save-settings-btn');
+
+    // DOM elements - Progress
+    const progressTableBody = document.getElementById('progress-table-body');
+    const overallMasteryElement = document.getElementById('overall-mastery');
+    const totalAnswersElement = document.getElementById('total-answers');
+    const overallAccuracyElement = document.getElementById('overall-accuracy');
+    const lastPracticeElement = document.getElementById('last-practice');
+
+    // Initialize the app
+    function initializeApp() {
+        // Initialize progress data
+        initializeProgressData();
+
+        // Load settings from form elements
+        loadSettingsFromForm();
+
+        // Update difficulty buttons with current interval settings
+        updateDifficultyButtonTexts();
+
+        // Event listeners - Tabs
+        quizTab.addEventListener('click', switchToQuizTab);
+        progressTab.addEventListener('click', switchToProgressTab);
+        selectionTab.addEventListener('click', switchToSelectionTab);
+        settingsTab.addEventListener('click', switchToSettingsTab);
+
+        // Event listeners - Quiz
+        submitBtn.addEventListener('click', checkAnswer);
+        nextBtn.addEventListener('click', showDifficultyOptions);
+        hintBtn.addEventListener('click', showHint);
+        restartBtn.addEventListener('click', switchToSelectionTab);
+
+        // Event listeners - Settings
+        saveSettingsBtn.addEventListener('click', saveSettings);
+
+        // Event listeners - Selection
+        viewByGroupBtn.addEventListener('click', showGroupView);
+        viewAlphabeticalBtn.addEventListener('click', showAlphabeticalView);
+        viewByStatusBtn.addEventListener('click', showStatusView);
+        searchInput.addEventListener('input', () => filterVerbs(searchInput.value));
+        selectAllBtn.addEventListener('click', selectAllVerbs);
+        deselectAllBtn.addEventListener('click', deselectAllVerbs);
+        selectDueBtn.addEventListener('click', selectDueVerbs);
+        startQuizBtn.addEventListener('click', initQuiz);
+
+        // Event listeners - Tutorial
+        understandBtn.addEventListener('click', closeTutorial);
+
+        // Event listeners - Difficulty buttons
+        document.querySelectorAll('.difficulty-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const difficulty = this.getAttribute('data-difficulty');
+                processDifficultyFeedback(difficulty);
+            });
+        });
+
+        // Keyboard events
+        answerInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && submitBtn.style.display !== 'none') {
+                checkAnswer();
+            } else if (e.key === 'Enter' && nextBtn.style.display !== 'none') {
+                showDifficultyOptions();
+            }
+        });
+    }
+
+    // Close the tutorial overlay
+    function closeTutorial() {
+        tutorialOverlay.style.display = 'none';
+    }
+
+    // Initialize progress data
+    function initializeProgressData() {
+        // Create initial progress data for each verb
+        verbProgress = verbs.map(verb => {
+            // Generate random mastery level for demonstration
+            const randomMastery = Math.floor(Math.random() * 100);
+
+            // Determine status based on mastery level
+            let status;
+            if (randomMastery < 30) {
+                status = 'hard';
+            } else if (randomMastery < 60) {
+                status = 'medium';
+            } else if (randomMastery < 80) {
+                status = 'easy';
+            } else {
+                status = 'learned';
+            }
+
+            // Calculate next review date based on status
+            const nextReview = calculateNextReview(status);
+
+            return {
+                verbId: verb.id,
+                correctCount: Math.floor(Math.random() * 10),
+                incorrectCount: Math.floor(Math.random() * 5),
+                lastAttempted: new Date(Date.now() - Math.random() * 86400000).toISOString(),
+                masteryLevel: randomMastery,
+                status: status,
+                nextReview: nextReview
+            };
+        });
+
+        updateDueCounts();
+        populateStatusView();
+    }
+
+    // Load settings from form elements
+    function loadSettingsFromForm() {
+        // Convert form values to minutes for internal storage
+        const convertToMinutes = (value, unit) => {
+            switch(unit) {
+                case 'minutes': return parseInt(value);
+                case 'hours': return parseInt(value) * 60;
+                case 'days': return parseInt(value) * 1440;
+                default: return parseInt(value);
+            }
+        };
+
+        intervalSettings.hard = convertToMinutes(hardIntervalInput.value, hardUnitSelect.value);
+        intervalSettings.medium = convertToMinutes(mediumIntervalInput.value, mediumUnitSelect.value);
+        intervalSettings.easy = convertToMinutes(easyIntervalInput.value, easyUnitSelect.value);
+        intervalSettings.learned = convertToMinutes(learnedIntervalInput.value, learnedUnitSelect.value);
+
+        quizSettings.mode = quizModeSelect.value;
+        quizSettings.maxQuestions = parseInt(sessionSizeInput.value);
+        quizSettings.caseSensitivity = caseSensitivitySelect.value;
+    }
+
+    // Save settings from form
+    function saveSettings() {
+        loadSettingsFromForm();
+        updateDifficultyButtonTexts();
+        alert("Settings saved successfully!");
+    }
+
+    // Update difficulty button text with current interval settings
+    function updateDifficultyButtonTexts() {
+        const formatInterval = (minutes) => {
+            if (minutes < 60) {
+                return `${minutes} min`;
+            } else if (minutes < 1440) {
+                return `${Math.floor(minutes / 60)} hour${Math.floor(minutes / 60) !== 1 ? 's' : ''}`;
+            } else {
+                return `${Math.floor(minutes / 1440)} day${Math.floor(minutes / 1440) !== 1 ? 's' : ''}`;
+            }
+        };
+
+        document.querySelector('.hard-btn .next-review').textContent = `Review in ${formatInterval(intervalSettings.hard)}`;
+        document.querySelector('.medium-btn .next-review').textContent = `Review in ${formatInterval(intervalSettings.medium)}`;
+        document.querySelector('.easy-btn .next-review').textContent = `Review in ${formatInterval(intervalSettings.easy)}`;
+        document.querySelector('.learned-btn .next-review').textContent = `Review in ${formatInterval(intervalSettings.learned)}`;
+    }
+
+    // Calculate next review date based on difficulty status
+    function calculateNextReview(difficulty) {
+        const now = new Date();
+        const minutesToAdd = intervalSettings[difficulty];
+        const nextReview = new Date(now.getTime() + minutesToAdd * 60000);
+        return nextReview.toISOString();
+    }
+
+    // Update due counts for verbs
+    function updateDueCounts() {
+        const now = new Date();
+
+        // Count verbs by status
+        let hardCount = 0;
+        let mediumCount = 0;
+        let easyCount = 0;
+        let learnedCount = 0;
+
+        verbProgress.forEach(progress => {
+            const nextReview = new Date(progress.nextReview);
+            if (nextReview <= now) {
+                // Due now - count by status
+                switch(progress.status) {
+                    case 'hard': hardCount++; break;
+                    case 'medium': mediumCount++; break;
+                    case 'easy': easyCount++; break;
+                    case 'learned': learnedCount++; break;
+                }
+            }
+        });
+
+        // Update the counts in the UI
+        dueHardCountElement.textContent = hardCount;
+        dueMediumCountElement.textContent = mediumCount;
+        dueEasyCountElement.textContent = easyCount;
+        dueLearnedCountElement.textContent = learnedCount;
+    }
+
+    // Populate the status view
+    function populateStatusView() {
+        statusView.innerHTML = '';
+
+        // Create sections for each status
+        const statuses = ['hard', 'medium', 'easy', 'learned'];
+        const statusLabels = {
+            'hard': 'Hard - Needs More Practice',
+            'medium': 'Medium - Getting There',
+            'easy': 'Easy - Almost Mastered',
+            'learned': 'Learned - Well Known'
+        };
+        const statusClasses = {
+            'hard': 'due-hard',
+            'medium': 'due-medium',
+            'easy': 'due-easy',
+            'learned': 'due-learned'
+        };
+
+        statuses.forEach(status => {
+            const statusVerbs = verbs.filter(verb => {
+                const progress = verbProgress.find(p => p.verbId === verb.id);
+                return progress && progress.status === status;
+            });
+
+            if (statusVerbs.length > 0) {
+                const statusSection = document.createElement('div');
+                statusSection.className = 'selection-group';
+
+                // Create header with More/Less button
+                const statusHeader = document.createElement('div');
+                statusHeader.className = 'selection-group-header';
+
+                const statusTitle = document.createElement('div');
+                statusTitle.className = `selection-group-title ${statusClasses[status]}`;
+                statusTitle.textContent = `${statusLabels[status]} (${statusVerbs.length})`;
+
+                const toggleButton = document.createElement('button');
+                toggleButton.className = 'toggle-button';
+                toggleButton.textContent = 'More';
+                toggleButton.setAttribute('data-target', `status-${status}`);
+                toggleButton.addEventListener('click', function() {
+                    const targetId = this.getAttribute('data-target');
+                    const targetContainer = document.getElementById(targetId);
+
+                    if (targetContainer.classList.contains('expanded')) {
+                        // Collapse
+                        targetContainer.classList.remove('expanded');
+                        this.textContent = 'More';
+                    } else {
+                        // Expand
+                        targetContainer.classList.add('expanded');
+                        this.textContent = 'Less';
+                    }
+                });
+
+                statusHeader.appendChild(statusTitle);
+                statusHeader.appendChild(toggleButton);
+
+                const verbContainer = document.createElement('div');
+                verbContainer.className = 'verb-checkbox-container';
+                verbContainer.id = `status-${status}`;
+
+                // Add verbs to this status
+                statusVerbs.forEach(verb => {
+                    const verbElement = createVerbCheckbox(verb);
+                    verbContainer.appendChild(verbElement);
+                });
+
+                statusSection.appendChild(statusHeader);
+                statusSection.appendChild(verbContainer);
+                statusView.appendChild(statusSection);
+            }
+        });
+    }
+
+    // Create a checkbox element for a verb
+    function createVerbCheckbox(verb) {
+        const container = document.createElement('div');
+        container.className = 'verb-checkbox';
+        container.setAttribute('data-verb-id', verb.id);
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `verb-${verb.id}`;
+        checkbox.checked = selectedVerbs.includes(verb.id);
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                if (!selectedVerbs.includes(verb.id)) {
+                    selectedVerbs.push(verb.id);
+                }
+            } else {
+                selectedVerbs = selectedVerbs.filter(id => id !== verb.id);
+            }
+            updateSelectionSummary();
+        });
+
+        const label = document.createElement('label');
+        label.htmlFor = `verb-${verb.id}`;
+        label.textContent = verb.greek;
+
+        const progress = verbProgress.find(p => p.verbId === verb.id);
+        const meaning = document.createElement('div');
+        meaning.className = 'verb-meaning';
+
+        // Show due date if available
+        if (progress && progress.nextReview) {
+            const nextReview = new Date(progress.nextReview);
+            const now = new Date();
+
+            // Show status and due time
+            if (nextReview <= now) {
+                meaning.textContent = `${verb.english} (Due now)`;
+            } else {
+                meaning.textContent = `${verb.english} (Due: ${formatRelativeTime(nextReview)})`;
+            }
+        } else {
+            meaning.textContent = verb.english;
+        }
+
+        container.appendChild(checkbox);
+        container.appendChild(label);
+        container.appendChild(meaning);
+
+        return container;
+    }
+
+    // Format a date as relative time
+    function formatRelativeTime(date) {
+        const now = new Date();
+        const diffMs = date - now;
+        const diffMinutes = Math.floor(diffMs / 60000);
+
+        if (diffMinutes < 0) {
+            return 'Now';
+        } else if (diffMinutes < 60) {
+            return `${diffMinutes} min`;
+        } else if (diffMinutes < 1440) {
+            return `${Math.floor(diffMinutes / 60)} hour${Math.floor(diffMinutes / 60) !== 1 ? 's' : ''}`;
+        } else {
+            return `${Math.floor(diffMinutes / 1440)} day${Math.floor(diffMinutes / 1440) !== 1 ? 's' : ''}`;
+        }
+    }
+
+    // Update the selection summary
+    function updateSelectionSummary() {
+        selectedCountElement.textContent = selectedVerbs.length;
+        totalVerbsElement.textContent = verbs.length;
+
+        // Disable start button if no verbs are selected
+        startQuizBtn.disabled = selectedVerbs.length === 0;
+    }
+
+    // Filter verbs by search query
+    function filterVerbs(query) {
+        if (!query) {
+            // Show all verbs if query is empty
+            document.querySelectorAll('.verb-checkbox').forEach(element => {
+                element.style.display = 'flex';
+            });
+            document.querySelectorAll('.selection-group').forEach(element => {
+                element.style.display = 'block';
+            });
+
+            // Remove any existing no results message
+            document.querySelectorAll('.no-results').forEach(el => el.remove());
+            return;
+        }
+
+        query = query.toLowerCase();
+        let hasResults = false;
+
+        // Hide verbs that don't match the query
+        document.querySelectorAll('.verb-checkbox').forEach(element => {
+            const verbId = parseInt(element.getAttribute('data-verb-id'));
+            const verb = verbs.find(v => v.id === verbId);
+
+            if (verb.greek.toLowerCase().includes(query) ||
+                verb.english.toLowerCase().includes(query) ||
+                verb.group.toLowerCase().includes(query)) {
+                element.style.display = 'flex';
+                hasResults = true;
+            } else {
+                element.style.display = 'none';
+            }
+        });
+
+        // Hide empty groups
+        const activeView = document.querySelector('#group-view:not([style*="display: none"]), #status-view:not([style*="display: none"])');
+        if (activeView) {
+            activeView.querySelectorAll('.selection-group').forEach(group => {
+                const visibleVerbs = Array.from(group.querySelectorAll('.verb-checkbox')).some(
+                    element => element.style.display !== 'none'
+                );
+
+                group.style.display = visibleVerbs ? 'block' : 'none';
+            });
+        }
+
+        // Show no results message if needed
+        if (!hasResults) {
+            // Remove any existing no results messages first
+            document.querySelectorAll('.no-results').forEach(el => el.remove());
+
+            const activeViewElement = document.querySelector('#group-view:not([style*="display: none"]), #alphabetical-view:not([style*="display: none"]), #status-view:not([style*="display: none"])');
+
+            if (activeViewElement) {
+                const noResults = document.createElement('div');
+                noResults.className = 'no-results';
+                noResults.textContent = 'No verbs match your search.';
+                activeViewElement.appendChild(noResults);
+            }
+        } else {
+            // Remove any existing no results message
+            document.querySelectorAll('.no-results').forEach(el => el.remove());
+        }
+    }
+
+    // Initialize the quiz
+    function initQuiz() {
+        // Update settings from form
+        loadSettingsFromForm();
+
+        currentQuestion = 0;
+        score = 0;
+        totalAnswered = 0;
+        correctAnswers = 0;
+        sessionHistory = [];
+
+        // Only include selected verbs
+        const selectedVerbIds = verbs
+            .filter(verb => selectedVerbs.includes(verb.id))
+            .map(verb => verb.id);
+
+        // Check if we have any verbs selected
+        if (selectedVerbIds.length === 0) {
+            alert("Please select at least one verb to practice.");
+            return;
+        }
+
+        // Create question list based on quiz mode
+        if (quizSettings.mode === 'due') {
+            // Due verbs first mode: prioritize verbs by due date
+            questionsAsked = createDueFirstQuiz(selectedVerbIds);
+        } else {
+            // Random mode: shuffle all selected verbs
+            questionsAsked = shuffleArray([...selectedVerbIds]);
+        }
+
+        // Limit to max questions
+        if (questionsAsked.length > quizSettings.maxQuestions) {
+            questionsAsked = questionsAsked.slice(0, quizSettings.maxQuestions);
+        }
+
+        // Reset session timer
+        sessionStartTime = new Date();
+        startSessionTimer();
+
+        scoreElement.textContent = score;
+        currentQuestionElement.textContent = currentQuestion + 1;
+        totalQuestionsElement.textContent = questionsAsked.length;
+        resultTotalElement.textContent = questionsAsked.length;
+        accuracyElement.textContent = '0';
+
+        loadQuestion();
+
+        // Switch to quiz tab
+        switchToQuizTab();
+    }
+
+    // Create a due-first quiz
+    function createDueFirstQuiz(verbIds) {
+        const now = new Date();
+
+        // Sort verbs by due date (earliest first)
+        const sortedIds = [...verbIds].sort((a, b) => {
+            const progressA = verbProgress.find(p => p.verbId === a);
+            const progressB = verbProgress.find(p => p.verbId === b);
+
+            if (!progressA || !progressB) return 0;
+
+            const dateA = new Date(progressA.nextReview);
+            const dateB = new Date(progressB.nextReview);
+
+            // Calculate priority - due verbs first, then by due date
+            const priorityA = dateA <= now ? -1 : dateA.getTime();
+            const priorityB = dateB <= now ? -1 : dateB.getTime();
+
+            return priorityA - priorityB;
+        });
+
+        return sortedIds;
+    }
+
+    // Load a question
+    function loadQuestion() {
+        currentVerbId = questionsAsked[currentQuestion];
+        const verb = verbs.find(v => v.id === currentVerbId);
+
+        questionText.textContent = `What is the Greek word for "${verb.english}"?`;
+        verbGroup.textContent = verb.group;
+
+        answerInput.value = '';
+        feedbackElement.style.display = 'none';
+        hintElement.style.display = 'none';
+        hintElement.textContent = verb.hint;
+        difficultyButtons.style.display = 'none';
+
+        submitBtn.style.display = 'inline-block';
+        nextBtn.style.display = 'none';
+
+        answerInput.focus();
+    }
+
+    // Check the answer
+    function checkAnswer() {
+        const verb = verbs.find(v => v.id === currentVerbId);
+        const userAnswer = answerInput.value.trim();
+        let isCorrect = false;
+
+        // Check answer based on case sensitivity setting
+        if (quizSettings.caseSensitivity === 'insensitive') {
+            // Case-insensitive check for first letter, case-sensitive for the rest
+            isCorrect = (
+                userAnswer.length > 0 &&
+                userAnswer.charAt(0).toLowerCase() === verb.greek.charAt(0).toLowerCase() &&
+                userAnswer.substring(1) === verb.greek.substring(1)
+            );
+        } else {
+            // Fully case-sensitive check
+            isCorrect = (userAnswer === verb.greek);
+        }
+
+        totalAnswered++;
+
+        if (isCorrect) {
+            // Correct answer
+            feedbackElement.textContent = `Correct! "${verb.greek}" is the right answer.`;
+            feedbackElement.className = 'feedback correct';
+            score++;
+            scoreElement.textContent = score;
+            correctAnswers++;
+
+            // Add to session history
+            sessionHistory.push({
+                verbId: currentVerbId,
+                result: 'correct',
+                timestamp: new Date().toISOString(),
+                answer: userAnswer,
+                difficulty: null // Will be set when user rates difficulty
+            });
+        } else {
+            // Incorrect answer
+            feedbackElement.textContent = `Incorrect. The correct answer is "${verb.greek}".`;
+            feedbackElement.className = 'feedback incorrect';
+
+            // Add to session history
+            sessionHistory.push({
+                verbId: currentVerbId,
+                result: 'incorrect',
+                timestamp: new Date().toISOString(),
+                answer: userAnswer,
+                difficulty: 'hard' // Automatically set to hard for incorrect answers
+            });
+
+            // Update verb progress for incorrect answer
+            updateVerbProgress(currentVerbId, 'hard');
+        }
+
+        // Update accuracy
+        const accuracyRate = Math.round((correctAnswers / totalAnswered) * 100);
+        accuracyElement.textContent = accuracyRate;
+
+        feedbackElement.style.display = 'block';
+        submitBtn.style.display = 'none';
+
+        if (isCorrect) {
+            // For correct answers, we'll ask for difficulty rating
+            nextBtn.textContent = 'Continue';
+            nextBtn.style.display = 'inline-block';
+        } else {
+            // For incorrect answers, we'll skip the difficulty rating
+            nextBtn.textContent = 'Next Question';
+            nextBtn.style.display = 'inline-block';
+
+            // If this was the last question, change button text
+            if (currentQuestion === questionsAsked.length - 1) {
+                nextBtn.textContent = 'See Results';
+            }
+        }
+    }
+
+    // Show difficulty options after correct answer
+    function showDifficultyOptions() {
+        const isCorrect = sessionHistory[sessionHistory.length - 1].result === 'correct';
+
+        if (isCorrect) {
+            // Only show difficulty options for correct answers
+            feedbackElement.style.display = 'none';
+            difficultyButtons.style.display = 'flex';
+            nextBtn.style.display = 'none';
+        } else {
+            // For incorrect answers, move directly to next question
+            moveToNextQuestion();
+        }
+    }
+
+    // Process difficulty feedback after correct answer
+    function processDifficultyFeedback(difficulty) {
+        // Update the most recent session history item
+        const historyItem = sessionHistory[sessionHistory.length - 1];
+        if (historyItem && historyItem.result === 'correct') {
+            historyItem.difficulty = difficulty;
+        }
+
+        // Update verb progress
+        updateVerbProgress(currentVerbId, difficulty);
+
+        // Move to next question
+        moveToNextQuestion();
+    }
+
+    // Move to next question or show results
+    function moveToNextQuestion() {
+        currentQuestion++;
+
+        if (currentQuestion < questionsAsked.length) {
+            // Load next question
+            currentQuestionElement.textContent = currentQuestion + 1;
+            loadQuestion();
+        } else {
+            // Quiz completed
+            showResults();
+        }
+    }
+
+    // Update verb progress based on difficulty
+    function updateVerbProgress(verbId, difficulty) {
+        const progress = verbProgress.find(p => p.verbId === verbId);
+        if (!progress) return;
+
+        // Update progress based on difficulty
+        if (difficulty === 'hard') {
+            // Hard - decrease mastery level
+            progress.masteryLevel = Math.max(0, progress.masteryLevel - 20);
+            progress.incorrectCount++;
+        } else {
+            // Correct answer - increase mastery based on difficulty
+            progress.correctCount++;
+
+            switch(difficulty) {
+                case 'medium':
+                    progress.masteryLevel = Math.min(100, progress.masteryLevel + 5);
+                    break;
+                case 'easy':
+                    progress.masteryLevel = Math.min(100, progress.masteryLevel + 10);
+                    break;
+                case 'learned':
+                    progress.masteryLevel = Math.min(100, progress.masteryLevel + 15);
+                    break;
+            }
+        }
+
+        // Update status based on new mastery level
+        if (progress.masteryLevel < 30) {
+            progress.status = 'hard';
+        } else if (progress.masteryLevel < 60) {
+            progress.status = 'medium';
+        } else if (progress.masteryLevel < 80) {
+            progress.status = 'easy';
+        } else {
+            progress.status = 'learned';
+        }
+
+        // Calculate next review date based on difficulty
+        progress.nextReview = calculateNextReview(difficulty);
+        progress.lastAttempted = new Date().toISOString();
+
+        // Update UI components
+        updateDueCounts();
+    }
+
+    // Show hint
+    function showHint() {
+        hintElement.style.display = 'block';
+    }
+
+    // Show results screen
+    function showResults() {
+        finalScoreElement.textContent = score;
+
+        // Stop the timer
+        clearInterval(sessionTimer);
+
+        // Display performance message based on score
+        if (score === questionsAsked.length) {
+            performanceMessage.textContent = "Perfect! You're a Greek verb master!";
+        } else if (score >= questionsAsked.length * 0.7) {
+            performanceMessage.textContent = "Great job! You're getting the hang of Greek verbs!";
+        } else if (score >= questionsAsked.length * 0.5) {
+            performanceMessage.textContent = "Good effort! Keep practicing to improve.";
+        } else {
+            performanceMessage.textContent = "Keep practicing! These verbs need more review.";
+        }
+
+        // Populate session summary
+        populateSessionSummary();
+
+        // Show results container
+        quizSection.style.display = 'none';
+        progressSection.style.display = 'none';
+        selectionSection.style.display = 'none';
+        settingsSection.style.display = 'none';
+        resultsContainer.style.display = 'block';
+
+        // Remove active class from all tabs
+        quizTab.classList.remove('active');
+        progressTab.classList.remove('active');
+        selectionTab.classList.remove('active');
+        settingsTab.classList.remove('active');
+    }
+
+    // Populate session summary in results screen
+    function populateSessionSummary() {
+        const summaryContainer = document.querySelector('#results-container .review-history');
+        summaryContainer.innerHTML = '<div style="margin-bottom: 10px; font-weight: bold;">Session Summary:</div>';
+
+        // Add each history item
+        sessionHistory.forEach(item => {
+            const verb = verbs.find(v => v.id === item.verbId);
+            if (!verb) return;
+
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+
+            // Create verb name
+            const verbSpan = document.createElement('span');
+            verbSpan.className = 'history-verb';
+            verbSpan.textContent = verb.greek;
+
+            // Create result
+            const resultSpan = document.createElement('span');
+            resultSpan.className = `history-result ${item.result}`;
+
+            if (item.result === 'correct') {
+                // For correct answers, show difficulty if available
+                if (item.difficulty) {
+                    resultSpan.textContent = `Correct (${item.difficulty.charAt(0).toUpperCase() + item.difficulty.slice(1)})`;
+                } else {
+                    resultSpan.textContent = 'Correct';
+                }
+            } else {
+                resultSpan.textContent = 'Incorrect';
+            }
+
+            historyItem.appendChild(verbSpan);
+            historyItem.appendChild(resultSpan);
+            summaryContainer.appendChild(historyItem);
+        });
+    }
+
+    // Session timer
+    let sessionTimer;
+    function startSessionTimer() {
+        sessionTimer = setInterval(updateSessionTime, 1000);
+    }
+
+    function updateSessionTime() {
+        const now = new Date();
+        const diffInSeconds = Math.floor((now - sessionStartTime) / 1000);
+        const minutes = Math.floor(diffInSeconds / 60);
+        const seconds = diffInSeconds % 60;
+        sessionTimeElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    // Tab switching functions
+    function switchToQuizTab() {
+        if (quizSection.style.display === 'none' && resultsContainer.style.display === 'none') {
+            // If not in an active quiz or results, start a new quiz
+            initQuiz();
+            return;
+        }
+
+        quizSection.style.display = 'block';
+        progressSection.style.display = 'none';
+        selectionSection.style.display = 'none';
+        settingsSection.style.display = 'none';
+        resultsContainer.style.display = 'none';
+
+        quizTab.classList.add('active');
+        progressTab.classList.remove('active');
+        selectionTab.classList.remove('active');
+        settingsTab.classList.remove('active');
+    }
+
+    function switchToProgressTab() {
+        quizSection.style.display = 'none';
+        progressSection.style.display = 'block';
+        selectionSection.style.display = 'none';
+        settingsSection.style.display = 'none';
+        resultsContainer.style.display = 'none';
+
+        quizTab.classList.remove('active');
+        progressTab.classList.add('active');
+        selectionTab.classList.remove('active');
+        settingsTab.classList.remove('active');
+    }
+
+    function switchToSelectionTab() {
+        quizSection.style.display = 'none';
+        progressSection.style.display = 'none';
+        selectionSection.style.display = 'block';
+        settingsSection.style.display = 'none';
+        resultsContainer.style.display = 'none';
+
+        quizTab.classList.remove('active');
+        progressTab.classList.remove('active');
+        selectionTab.classList.add('active');
+        settingsTab.classList.remove('active');
+    }
+
+    function switchToSettingsTab() {
+        quizSection.style.display = 'none';
+        progressSection.style.display = 'none';
+        selectionSection.style.display = 'none';
+        settingsSection.style.display = 'block';
+        resultsContainer.style.display = 'none';
+
+        quizTab.classList.remove('active');
+        progressTab.classList.remove('active');
+        selectionTab.classList.remove('active');
+        settingsTab.classList.add('active');
+    }
+
+    // Toggle between different views in selection tab
+    function showGroupView() {
+        groupView.style.display = 'block';
+        alphabeticalView.style.display = 'none';
+        statusView.style.display = 'none';
+
+        viewByGroupBtn.classList.add('active');
+        viewAlphabeticalBtn.classList.remove('active');
+        viewByStatusBtn.classList.remove('active');
+
+        filterVerbs(searchInput.value);
+    }
+
+    function showAlphabeticalView() {
+        groupView.style.display = 'none';
+        alphabeticalView.style.display = 'grid';
+        statusView.style.display = 'none';
+
+        viewByGroupBtn.classList.remove('active');
+        viewAlphabeticalBtn.classList.add('active');
+        viewByStatusBtn.classList.remove('active');
+
+        // Populate alphabetical view if not already populated
+        if (alphabeticalView.children.length === 0) {
+            // Sort verbs alphabetically by Greek
+            const sortedVerbs = [...verbs].sort((a, b) => a.greek.localeCompare(b.greek));
+
+            // Add each verb
+            sortedVerbs.forEach(verb => {
+                const verbElement = createVerbCheckbox(verb);
+                alphabeticalView.appendChild(verbElement);
+            });
+        }
+
+        filterVerbs(searchInput.value);
+    }
+
+    function showStatusView() {
+        groupView.style.display = 'none';
+        alphabeticalView.style.display = 'none';
+        statusView.style.display = 'block';
+
+        viewByGroupBtn.classList.remove('active');
+        viewAlphabeticalBtn.classList.remove('active');
+        viewByStatusBtn.classList.add('active');
+
+        // Update status view
+        populateStatusView();
+        filterVerbs(searchInput.value);
+    }
+
+    // Selection actions
+    function selectAllVerbs() {
+        selectedVerbs = verbs.map(verb => verb.id);
+        document.querySelectorAll('.verb-checkbox input[type="checkbox"]').forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        updateSelectionSummary();
+    }
+
+    function deselectAllVerbs() {
+        selectedVerbs = [];
+        document.querySelectorAll('.verb-checkbox input[type="checkbox"]').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        updateSelectionSummary();
+    }
+
+    function selectDueVerbs() {
+        const now = new Date();
+
+        // Find all due verbs
+        const dueVerbIds = verbs
+            .filter(verb => {
+                const progress = verbProgress.find(p => p.verbId === verb.id);
+                return progress && new Date(progress.nextReview) <= now;
+            })
+            .map(verb => verb.id);
+
+        // Update selected verbs
+        selectedVerbs = dueVerbIds;
+
+        // Update checkboxes
+        document.querySelectorAll('.verb-checkbox input[type="checkbox"]').forEach(checkbox => {
+            const verbId = parseInt(checkbox.id.replace('verb-', ''));
+            checkbox.checked = dueVerbIds.includes(verbId);
+        });
+
+        updateSelectionSummary();
+
+        // If no due verbs, show a message
+        if (dueVerbIds.length === 0) {
+            alert("There are no verbs due for review right now.");
+        }
+    }
+
+    // Shuffle array (Fisher-Yates algorithm)
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    // Initialize the app
+    initializeApp();
+</script>
+</body>
+</html>
